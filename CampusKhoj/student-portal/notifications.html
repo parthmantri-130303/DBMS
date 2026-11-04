@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notifications — CampusKhoj</title>
+  <link rel="stylesheet" href="../shared/tokens.css">
+  <style>
+    .layout-container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 5rem 1rem;
+    }
+    .notif-card {
+      background: var(--surface-student);
+      border: 1px solid var(--border-student);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background-color 150ms ease;
+    }
+    .notif-card.unread {
+      background: #FFFDF9;
+      border-left: 4px solid var(--accent);
+    }
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--surface-student);
+      border-top: 1px solid var(--border-student);
+      display: flex;
+      justify-content: space-around;
+      padding: 0.5rem 0.25rem;
+      z-index: 1000;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+      color: var(--muted-student);
+      text-decoration: none;
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 0.25rem 0.5rem;
+    }
+    .nav-item.active {
+      color: var(--primary-student);
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div class="layout-container">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:0.75rem;">
+      <div>
+        <h1 style="margin:0;font-size:1.75rem;color:var(--primary-student);">Alerts &amp; Dispatch</h1>
+        <p style="margin:0.25rem 0 0 0;color:var(--muted-student);font-size:0.875rem;">
+          Match suggestions, claim approvals, and simulated message outbox.
+        </p>
+      </div>
+      <div style="display:flex;gap:0.5rem;align-items:center;">
+        <button id="btn-open-messages" class="btn-saffron btn-open-messages" style="font-size:0.8125rem;padding:0.4rem 0.875rem;display:inline-flex;align-items:center;gap:0.35rem;border-radius:var(--radius-pill);cursor:pointer;">
+          <span>💬</span> Messages Outbox
+          <span class="nav-badge ck-messages-unread-badge" style="display:none;position:static;transform:none;margin-left:2px;">0</span>
+        </button>
+        <button id="btn-read-all" class="btn-outline" style="font-size:0.8125rem;padding:0.4rem 0.875rem;border-radius:var(--radius-pill);">
+          Mark All Read
+        </button>
+      </div>
+    </div>
+
+    <div id="notif-list"></div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <a href="index.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#127968;</span>
+      <span>Home</span>
+    </a>
+    <a href="campuses.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#127979;</span>
+      <span>Campuses</span>
+    </a>
+    <a href="report-lost.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#10133;</span>
+      <span>Report</span>
+    </a>
+    <a href="my-claims.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#128221;</span>
+      <span>Claims</span>
+    </a>
+    <a href="notifications.html" class="nav-item active">
+      <span style="font-size:1.25rem;">&#128276;</span>
+      <span>Alerts</span>
+    </a>
+    <a href="#" class="nav-item btn-open-messages" id="nav-messages-link">
+      <span style="font-size:1.25rem;">&#128172;</span>
+      <span>Messages</span>
+      <span class="nav-badge ck-messages-unread-badge" style="display:none;">0</span>
+    </a>
+  </nav>
+
+  <script type="module">
+    import { ApiClient } from '../shared/api.js';
+    import { escapeHtml, formatDateTime, showToast, renderSkeletons, attachMessagesTrigger } from '../shared/ui.js';
+
+    const api = new ApiClient('student');
+    if (!api.isAuthenticated()) {
+      window.location.href = 'login.html';
+    }
+
+    attachMessagesTrigger({ api });
+
+    async function loadNotifications() {
+      const container = document.getElementById('notif-list');
+      renderSkeletons(container, 3);
+
+      try {
+        const res = await api.getNotifications();
+        const list = res.notifications || [];
+
+        if (list.length === 0) {
+          container.innerHTML = `
+            <div style="text-align:center;padding:3rem 1rem;background:var(--surface-student);border-radius:var(--radius-lg);border:1px dashed var(--border-student);">
+              <span style="font-size:2.5rem;">&#128277;</span>
+              <h3 style="margin:0.5rem 0 0.25rem 0;color:var(--primary-student);">No alerts right now</h3>
+              <p style="margin:0;color:var(--muted-student);font-size:0.875rem;">
+                When a match is found or security staff review your claim, you'll be notified here.
+              </p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = list.map(n => `
+          <div class="notif-card ${n.is_read ? '' : 'unread'} animate-fade-in" id="notif-${n.notification_id}">
+            <div>
+              <p style="margin:0 0 0.25rem 0;font-size:0.9375rem;color:var(--text-student);font-weight:${n.is_read ? '500' : '600'};">
+                ${escapeHtml(n.message)}
+              </p>
+              <span style="font-size:0.75rem;color:var(--muted-student);">${formatDateTime(n.created_at)}</span>
+            </div>
+            ${!n.is_read ? `
+              <button class="btn-read-single" data-id="${n.notification_id}" style="background:none;border:none;color:var(--primary-student);font-size:0.75rem;font-weight:600;cursor:pointer;">
+                Dismiss
+              </button>
+            ` : ''}
+          </div>
+        `).join('');
+
+        document.querySelectorAll('.btn-read-single').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const id = btn.getAttribute('data-id');
+            try {
+              await api.markNotificationRead(id);
+              loadNotifications();
+            } catch {}
+          });
+        });
+
+      } catch (err) {
+        container.innerHTML = `<div style="color:var(--danger);padding:1rem;">Failed to load alerts: ${err.message}</div>`;
+      }
+    }
+
+    document.getElementById('btn-read-all').addEventListener('click', async () => {
+      try {
+        await api.markAllNotificationsRead();
+        showToast('All alerts marked as read', 'info');
+        loadNotifications();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    });
+
+    loadNotifications();
+  </script>
+</body>
+</html>
+

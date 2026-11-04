@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Claims — CampusKhoj</title>
+  <link rel="stylesheet" href="../shared/tokens.css">
+  <style>
+    .layout-container {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 5rem 1rem;
+    }
+    .claim-card {
+      background: var(--surface-student);
+      border: 1px solid var(--border-student);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .verif-box {
+      background: #FDF9F3;
+      border: 1px solid #ECD8B8;
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--surface-student);
+      border-top: 1px solid var(--border-student);
+      display: flex;
+      justify-content: space-around;
+      padding: 0.5rem 0.25rem;
+      z-index: 1000;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+      color: var(--muted-student);
+      text-decoration: none;
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 0.25rem 0.5rem;
+    }
+    .nav-item.active {
+      color: var(--primary-student);
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div class="layout-container">
+    <div style="margin-bottom: 1.5rem;">
+      <h1 style="margin:0 0 0.25rem 0;font-size:1.75rem;color:var(--primary-student);">My Claims</h1>
+      <p style="margin:0;color:var(--muted-student);font-size:0.875rem;">
+        Track items you claimed, reply to verification questions, and see collection status.
+      </p>
+    </div>
+
+    <div id="claims-list">
+      <!-- Rendered via JS -->
+    </div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <a href="index.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#127968;</span>
+      <span>Home</span>
+    </a>
+    <a href="campuses.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#127979;</span>
+      <span>Campuses</span>
+    </a>
+    <a href="report-lost.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#10133;</span>
+      <span>Report</span>
+    </a>
+    <a href="my-claims.html" class="nav-item active">
+      <span style="font-size:1.25rem;">&#128221;</span>
+      <span>Claims</span>
+    </a>
+    <a href="notifications.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#128276;</span>
+      <span>Alerts</span>
+    </a>
+  </nav>
+
+  <script type="module">
+    import { ApiClient } from '../shared/api.js';
+    import { escapeHtml, formatDate, formatDateTime, showToast, renderSkeletons, showClaimPassportModal, openClaimMessengerDrawer } from '../shared/ui.js';
+
+    const api = new ApiClient('student');
+    if (!api.isAuthenticated()) {
+      window.location.href = 'login.html';
+    }
+
+    async function loadClaims() {
+      const container = document.getElementById('claims-list');
+      renderSkeletons(container, 2);
+
+      try {
+        const res = await api.getMyClaims();
+        const claims = res.claims || [];
+
+        if (claims.length === 0) {
+          container.innerHTML = `
+            <div style="text-align:center;padding:3.5rem 1rem;background:var(--surface-student);border-radius:var(--radius-lg);border:1px dashed var(--border-student);">
+              <span style="font-size:3rem;">&#128221;</span>
+              <h3 style="margin:0.5rem 0 0.25rem 0;color:var(--primary-student);">No claims yet</h3>
+              <p style="margin:0 0 1.25rem 0;color:var(--muted-student);font-size:0.875rem;">
+                When you spot an item in Found listings that belongs to you, submit a claim.
+              </p>
+              <a href="campuses.html" class="btn-saffron">Browse Found Items</a>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = claims.map(c => {
+          let badgeStyle = 'background:#E8F0EA;color:#1F4D3A;';
+          if (c.claim_status === 'APPROVED') badgeStyle = 'background:#EBF5EF;color:#2F7D4F;font-weight:bold;';
+          else if (c.claim_status === 'REJECTED') badgeStyle = 'background:#FBECE8;color:#B8532F;';
+          else if (c.claim_status === 'COMPLETED') badgeStyle = 'background:#E6EFF8;color:#2C6E8F;';
+
+          const questions = c.questions || [];
+          const hasUnanswered = questions.some(q => q.verification_status === 'ASKED');
+
+          return `
+            <div class="claim-card animate-fade-in" id="claim-card-${c.claim_id}">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem;">
+                <div>
+                  <h3 style="margin:0 0 0.25rem 0;font-size:1.25rem;color:var(--primary-student);">
+                    ${escapeHtml(c.found_item_name)}
+                  </h3>
+                  <div style="font-size:0.8125rem;color:var(--muted-student);">
+                    Found on ${formatDate(c.date_found)} at ${escapeHtml(c.location_name)} (${escapeHtml(c.campus_name)})
+                  </div>
+                </div>
+                <span class="chip" style="${badgeStyle}">
+                  ${c.claim_status.replace('_', ' ')}
+                </span>
+              </div>
+
+              <div style="font-size:0.875rem;margin-bottom:0.75rem;">
+                <strong>Your Statement:</strong>
+                <p style="margin:0.25rem 0 0 0;color:var(--text-student);background:#FAF6EE;padding:0.625rem;border-radius:var(--radius-sm);">
+                  ${escapeHtml(c.claim_description)}
+                </p>
+              </div>
+
+              ${c.proof_url ? `
+                <div style="margin-bottom:0.75rem;display:flex;align-items:center;gap:0.75rem;background:#F4EFE6;padding:0.625rem;border-radius:var(--radius-sm);">
+                  <a href="${c.proof_url}" target="_blank" style="display:inline-block;border-radius:var(--radius-sm);overflow:hidden;width:56px;height:56px;flex-shrink:0;border:1px solid var(--border-student);">
+                    <img src="${c.proof_url}" alt="Ownership Proof" style="width:100%;height:100%;object-fit:cover;">
+                  </a>
+                  <div style="font-size:0.8125rem;">
+                    <strong style="color:var(--primary-student);">Attached Evidence (${escapeHtml(c.proof_type || 'DOCUMENT')}):</strong>
+                    <div style="margin-top:0.125rem;">
+                      <a href="${c.proof_url}" target="_blank" style="color:var(--accent);font-weight:600;text-decoration:none;">Open Full Size &rarr;</a>
+                    </div>
+                  </div>
+                </div>
+              ` : ''}
+
+              ${c.reject_reason ? `
+                <div style="background:#FDEEEC;color:#B8532F;padding:0.75rem;border-radius:var(--radius-sm);font-size:0.8125rem;margin-bottom:0.75rem;">
+                  <strong>Rejection Reason:</strong> ${escapeHtml(c.reject_reason)}
+                </div>
+              ` : ''}
+
+              <!-- Verification Questions Panel -->
+              ${questions.length > 0 ? `
+                <div class="verif-box">
+                  <div style="font-weight:700;font-size:0.875rem;color:#8B5A10;margin-bottom:0.5rem;display:flex;align-items:center;gap:0.375rem;">
+                    <span>&#10067;</span> Security Verification Questions (${questions.length})
+                  </div>
+                  ${questions.map(q => `
+                    <div style="margin-bottom:0.75rem;padding-bottom:0.75rem;border-bottom:1px solid #EFE4D2;">
+                      <div style="font-weight:600;font-size:0.8125rem;color:var(--text-student);">${escapeHtml(q.question)}</div>
+                      ${q.answer ? `
+                        <div style="margin-top:0.25rem;font-size:0.8125rem;color:var(--primary-student);">
+                          <strong>Your Answer:</strong> ${escapeHtml(q.answer)}
+                          <span style="font-size:0.75rem;color:var(--muted-student);margin-left:0.5rem;">(${q.verification_status})</span>
+                        </div>
+                      ` : `
+                        <div style="margin-top:0.5rem;">
+                          <input type="text" id="answer-${q.verification_id}" placeholder="Type your answer here..." style="width:100%;box-sizing:border-box;padding:0.5rem;border:1px solid var(--border-student);border-radius:var(--radius-sm);font-size:0.8125rem;">
+                        </div>
+                      `}
+                    </div>
+                  `).join('')}
+
+                  ${hasUnanswered ? `
+                    <button class="btn-saffron btn-submit-answers" data-claim-id="${c.claim_id}" style="font-size:0.8125rem;padding:0.4rem 0.875rem;">
+                      Submit Answers to Desk
+                    </button>
+                  ` : ''}
+                </div>
+              ` : ''}
+
+              <!-- Interactive Claim Actions: Digital Passport QR & Live Chat -->
+              <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.875rem;">
+                <button type="button" class="btn-passport" data-claim-id="${c.claim_id}" style="background:var(--primary-student); color:#fff; border:none; border-radius:var(--radius-pill); padding:0.4rem 0.85rem; font-size:0.75rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:0.35rem;">
+                  <span>&#127915;</span> Claim Passport &amp; QR
+                </button>
+                <button type="button" class="btn-chat-desk" data-claim-id="${c.claim_id}" style="background:#FFF; color:var(--primary-student); border:1px solid var(--border-student); border-radius:var(--radius-pill); padding:0.4rem 0.85rem; font-size:0.75rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:0.35rem;">
+                  <span>&#128172;</span> Chat with Desk
+                </button>
+              </div>
+
+              <!-- Footer with Cancel button -->
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1rem;padding-top:0.75rem;border-top:1px solid #F0ECE4;font-size:0.75rem;color:var(--muted-student);">
+                <span>Submitted: ${formatDateTime(c.submitted_at)}</span>
+                ${(c.claim_status === 'PENDING' || c.claim_status === 'UNDER_REVIEW') ? `
+                  <button class="btn-cancel-claim" data-claim-id="${c.claim_id}" style="background:none;border:none;color:var(--lost);font-weight:600;cursor:pointer;padding:0;">
+                    Cancel Claim
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        // Attach event handlers for answer submissions
+        document.querySelectorAll('.btn-submit-answers').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const claimId = btn.getAttribute('data-claim-id');
+            const card = document.getElementById(`claim-card-${claimId}`);
+            const inputs = card.querySelectorAll('input[id^="answer-"]');
+            const answers = [];
+
+            inputs.forEach(inp => {
+              const verifId = parseInt(inp.id.replace('answer-', ''), 10);
+              const ansVal = inp.value.trim();
+              if (ansVal) {
+                answers.push({ verification_id: verifId, answer: ansVal });
+              }
+            });
+
+            if (answers.length === 0) {
+              showToast('Please enter an answer first', 'warning');
+              return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Submitting...';
+
+            try {
+              await api.submitClaimAnswers(claimId, answers);
+              showToast('Answers submitted! Security desk will review them.', 'success');
+              loadClaims();
+            } catch (err) {
+              showToast(err.message || 'Failed to submit answers', 'error');
+              btn.disabled = false;
+              btn.textContent = 'Submit Answers to Desk';
+            }
+          });
+        });
+
+        // Attach event handlers for Claim Passport Modal & Chat
+        document.querySelectorAll('.btn-passport').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const claimId = parseInt(btn.getAttribute('data-claim-id'), 10);
+            showClaimPassportModal({ claimId, api });
+          });
+        });
+
+        document.querySelectorAll('.btn-chat-desk').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const claimId = parseInt(btn.getAttribute('data-claim-id'), 10);
+            openClaimMessengerDrawer({ claimId, userRole: 'STUDENT', api });
+          });
+        });
+
+        // Attach event handlers for cancel claim
+        document.querySelectorAll('.btn-cancel-claim').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const claimId = btn.getAttribute('data-claim-id');
+            if (confirm('Are you sure you want to cancel this claim?')) {
+              try {
+                await api.cancelClaim(claimId);
+                showToast('Claim cancelled', 'info');
+                loadClaims();
+              } catch (err) {
+                showToast(err.message || 'Failed to cancel claim', 'error');
+              }
+            }
+          });
+        });
+
+      } catch (err) {
+        container.innerHTML = `<div style="color:var(--danger);padding:1rem;">Failed to load claims: ${err.message}</div>`;
+      }
+    }
+
+    loadClaims();
+  </script>
+</body>
+</html>
+

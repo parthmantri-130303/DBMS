@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claims Verification Queue — CampusKhoj Admin</title>
+  <link rel="stylesheet" href="../shared/tokens.css">
+  <style>
+    body {
+      background-color: var(--bg-admin);
+      color: var(--text-admin);
+      display: flex;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .sidebar {
+      width: 240px;
+      background: var(--surface-admin);
+      border-right: 1px solid var(--border-admin);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .sidebar-brand {
+      padding: 1.5rem 1.25rem;
+      border-bottom: 1px solid var(--border-admin);
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .nav-links {
+      list-style: none;
+      padding: 1rem 0;
+      margin: 0;
+    }
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1.25rem;
+      color: var(--muted-admin);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.9375rem;
+      transition: all 150ms ease;
+    }
+    .nav-link:hover, .nav-link.active {
+      color: #FFFFFF;
+      background: #33403A;
+      border-left: 3px solid var(--accent);
+    }
+    .main-content {
+      flex: 1;
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+    }
+    .claims-layout {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+    @media (max-width: 960px) {
+      .claims-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+    .queue-list {
+      background: var(--surface-admin);
+      border: 1px solid var(--border-admin);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      max-height: calc(100vh - 160px);
+      overflow-y: auto;
+    }
+    .queue-item {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border-admin);
+      cursor: pointer;
+      transition: background 150ms ease;
+    }
+    .queue-item:hover, .queue-item.active {
+      background: #2C362F;
+    }
+    .review-panel {
+      background: var(--surface-admin);
+      border: 1px solid var(--border-admin);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+    }
+    .columns-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1.2fr;
+      gap: 1.25rem;
+      margin-top: 1.25rem;
+    }
+    @media (max-width: 1200px) {
+      .columns-3 {
+        grid-template-columns: 1fr;
+      }
+    }
+    .column-box {
+      background: #181E1A;
+      border: 1px solid var(--border-admin);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+    }
+    .sticky-actions {
+      margin-top: 1.5rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--border-admin);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+    }
+  </style>
+</head>
+<body class="admin-theme">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div>
+      <div class="sidebar-brand">
+        <span style="display:inline-block;width:10px;height:10px;background:var(--accent);border-radius:50%;"></span>
+        CampusKhoj Desk
+      </div>
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link">&#128202; Dashboard</a></li>
+        <li><a href="items.html" class="nav-link">&#128221; All Items &amp; CSV</a></li>
+        <li><a href="claims.html" class="nav-link active">&#128270; Claims Queue</a></li>
+        <li><a href="locations.html" class="nav-link">&#128205; Locations</a></li>
+        <li><a href="messages.html" class="nav-link">&#128172; Message Log</a></li>
+        <li><a href="users.html" class="nav-link">&#128101; PRN &amp; Students</a></li>
+        <li><a href="audit.html" class="nav-link">&#128220; Audit Log</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <h1 style="margin:0;font-size:1.625rem;color:#FFF;">Claim Review &amp; Handover Desk</h1>
+        <p style="margin:0.25rem 0 0 0;color:var(--muted-admin);font-size:0.875rem;">
+          Cross-examine claimant answers against private details before issuing physical handover.
+        </p>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.75rem;">
+        <button id="btn-scan-qr" class="btn-saffron" style="font-size:0.8125rem;padding:0.45rem 0.9rem;border-radius:var(--radius-pill);cursor:pointer;display:inline-flex;align-items:center;gap:0.35rem;">
+          <span>&#128247;</span> Scan Claim QR Passport
+        </button>
+        <select id="queue-status-filter" style="padding:0.5rem 0.875rem;border-radius:var(--radius-sm);border:1px solid var(--border-admin);background:#181E1A;color:#FFF;">
+          <option value="ALL">All Statuses</option>
+          <option value="PENDING" selected>Pending Review</option>
+          <option value="UNDER_REVIEW">Under Review</option>
+          <option value="APPROVED">Approved (Ready for Handover)</option>
+          <option value="COMPLETED">Handed Over</option>
+          <option value="REJECTED">Rejected</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="claims-layout">
+      <!-- Left: Queue List -->
+      <div class="queue-list" id="queue-container">
+        <div style="padding:2rem;text-align:center;color:var(--muted-admin);">Loading queue...</div>
+      </div>
+
+      <!-- Right: Detailed 3-Column Inspection -->
+      <div class="review-panel" id="review-panel">
+        <div style="text-align:center;padding:5rem 1rem;color:var(--muted-admin);">
+          <span style="font-size:3rem;">&#128065;</span>
+          <h3 style="margin:0.5rem 0 0 0;color:#FFF;">Select a Claim from the Queue</h3>
+          <p style="margin:0;font-size:0.875rem;">Inspect claimant statements, compare private item records, and record handover.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { ApiClient } from '../shared/api.js';
+    import { escapeHtml, formatDate, formatDateTime, showToast, openAdminQrScannerModal, openClaimMessengerDrawer } from '../shared/ui.js';
+
+    const api = new ApiClient('admin');
+    const user = api.getUser();
+
+    if (!api.isAuthenticated()) {
+      window.location.href = 'login.html';
+    }
+
+    let currentClaim = null;
+
+    async function loadClaimsQueue() {
+      const statusFilter = document.getElementById('queue-status-filter').value;
+      const queueBox = document.getElementById('queue-container');
+
+      try {
+        const res = await api.getAdminClaims({ status: statusFilter });
+        const claims = res.claims || [];
+
+        if (claims.length === 0) {
+          queueBox.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--muted-admin);">No claims match this status.</div>';
+          return;
+        }
+
+        queueBox.innerHTML = claims.map(c => `
+          <div class="queue-item ${currentClaim?.claim_id === c.claim_id ? 'active' : ''}" data-id="${c.claim_id}">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem;">
+              <span class="chip" style="background:#33403A;color:#FFF;font-size:0.7rem;">#${c.claim_id} &bull; ${c.claim_status}</span>
+              <span style="font-size:0.7rem;color:var(--muted-admin);">${formatDate(c.submitted_at)}</span>
+            </div>
+            <h4 style="margin:0 0 0.25rem 0;color:#FFF;font-size:0.9375rem;">${escapeHtml(c.found_item_name)}</h4>
+            <div style="font-size:0.8125rem;color:var(--muted-admin);">
+              Claimant: <strong>${escapeHtml(c.claimant_name || c.claimant_prn)}</strong> (${escapeHtml(c.claimant_prn)})
+            </div>
+          </div>
+        `).join('');
+
+        document.querySelectorAll('.queue-item').forEach(el => {
+          el.addEventListener('click', () => {
+            const id = parseInt(el.getAttribute('data-id'), 10);
+            const found = claims.find(item => item.claim_id === id);
+            if (found) {
+              currentClaim = found;
+              document.querySelectorAll('.queue-item').forEach(qi => qi.classList.remove('active'));
+              el.classList.add('active');
+              renderClaimReview(found);
+            }
+          });
+        });
+
+      } catch (err) {
+        queueBox.innerHTML = `<div style="color:var(--danger);padding:1rem;">Failed to load claims: ${err.message}</div>`;
+      }
+    }
+
+    function renderClaimReview(c) {
+      const panel = document.getElementById('review-panel');
+      const questions = c.questions || [];
+
+      panel.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:1rem;border-bottom:1px solid var(--border-admin);">
+          <div>
+            <span class="chip" style="background:#3E8E6A;color:#FFF;font-weight:bold;margin-bottom:0.25rem;">${c.claim_status}</span>
+            <h2 style="margin:0;font-size:1.375rem;color:#FFF;">Claim #${c.claim_id} &mdash; ${escapeHtml(c.found_item_name)}</h2>
+          </div>
+          <span style="font-size:0.8125rem;color:var(--muted-admin);">Submitted: ${formatDateTime(c.submitted_at)}</span>
+        </div>
+
+        <div class="columns-3">
+          <!-- Col 1: Claimant Info -->
+          <div class="column-box">
+            <h4 style="margin:0 0 0.75rem 0;color:var(--primary-admin);">1. Claimant Identity</h4>
+            <div style="font-size:0.875rem;margin-bottom:0.5rem;"><strong>Name:</strong> ${escapeHtml(c.claimant_name || 'N/A')}</div>
+            <div style="font-size:0.875rem;margin-bottom:0.5rem;"><strong>PRN:</strong> ${escapeHtml(c.claimant_prn)}</div>
+            <div style="font-size:0.875rem;margin-bottom:0.5rem;"><strong>Campus:</strong> ${escapeHtml(c.campus_name)}</div>
+            <div style="font-size:0.875rem;margin-bottom:0.75rem;"><strong>Phone:</strong> ${escapeHtml(c.claimant_phone || 'N/A')}</div>
+            
+            <div style="margin-top:1rem;padding-top:0.75rem;border-top:1px solid var(--border-admin);">
+              <strong style="color:var(--accent);display:block;font-size:0.8125rem;margin-bottom:0.25rem;">Claim Statement:</strong>
+              <p style="margin:0;font-size:0.8125rem;color:#DDD;background:#242B26;padding:0.625rem;border-radius:var(--radius-sm);">
+                ${escapeHtml(c.claim_description)}
+              </p>
+            </div>
+
+            ${c.proof_url ? `
+              <div style="margin-top:0.75rem;padding:0.625rem;background:#1E2521;border:1px solid #3B4741;border-radius:var(--radius-sm);">
+                <strong style="color:var(--accent);display:block;font-size:0.8125rem;margin-bottom:0.375rem;">
+                  🧾 Attached Proof (${escapeHtml(c.proof_type || 'DOCUMENT')}):
+                </strong>
+                <a href="${c.proof_url}" target="_blank" style="display:inline-block;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border-admin);max-width:160px;">
+                  <img src="${c.proof_url}" alt="Ownership Proof Document" style="width:100%;height:90px;object-fit:cover;display:block;">
+                </a>
+                <div style="margin-top:0.25rem;">
+                  <a href="${c.proof_url}" target="_blank" style="color:var(--accent);font-size:0.75rem;font-weight:600;text-decoration:none;">Inspect Full Document &rarr;</a>
+                </div>
+              </div>
+            ` : ''}
+          </div>
+
+          <!-- Col 2: Item Private Details (Staff View) -->
+          <div class="column-box">
+            <h4 style="margin:0 0 0.75rem 0;color:var(--accent);">&#128274; 2. Private Evidence</h4>
+            <div style="font-size:0.875rem;margin-bottom:0.5rem;"><strong>Item:</strong> ${escapeHtml(c.found_item_name)}</div>
+            <div style="font-size:0.875rem;margin-bottom:0.5rem;"><strong>Desk Storage:</strong> ${escapeHtml(c.storage_location || 'Security Locker')}</div>
+            
+            <div style="margin-top:1rem;background:#2A2318;border:1px solid #7E591B;border-radius:var(--radius-sm);padding:0.75rem;">
+              <strong style="color:var(--accent);display:block;font-size:0.8125rem;margin-bottom:0.25rem;">Confidential Distinguishing Features:</strong>
+              <p style="margin:0;font-size:0.8125rem;color:#F4E5CC;">
+                ${escapeHtml(c.private_details || 'No private notes registered by finder.')}
+              </p>
+            </div>
+          </div>
+
+          <!-- Col 3: Verification Questions -->
+          <div class="column-box">
+            <h4 style="margin:0 0 0.75rem 0;color:#FFF;">3. Verification Panel</h4>
+            
+            ${questions.map(q => `
+              <div style="background:#242B26;border-radius:var(--radius-sm);padding:0.75rem;margin-bottom:0.75rem;">
+                <div style="font-weight:600;font-size:0.8125rem;color:#FFF;">Q: ${escapeHtml(q.question)}</div>
+                ${q.expected_evidence ? `<div style="font-size:0.75rem;color:var(--accent);">Expected: ${escapeHtml(q.expected_evidence)}</div>` : ''}
+                <div style="margin-top:0.375rem;font-size:0.8125rem;color:var(--primary-admin);">
+                  <strong>Student Answer:</strong> ${escapeHtml(q.answer || 'Awaiting student reply...')}
+                </div>
+                <div style="margin-top:0.5rem;display:flex;gap:0.5rem;align-items:center;">
+                  <span style="font-size:0.75rem;color:var(--muted-admin);">Status: <strong>${q.verification_status}</strong></span>
+                  ${q.answer && q.verification_status !== 'VERIFIED' ? `
+                    <button class="btn-verify-q btn-saffron" data-qid="${q.verification_id}" style="padding:0.2rem 0.5rem;font-size:0.7rem;min-height:auto;">
+                      Mark Verified
+                    </button>
+                  ` : ''}
+                </div>
+              </div>
+            `).join('')}
+
+            <!-- Add Question Form -->
+            <div style="margin-top:1rem;">
+              <input type="text" id="new-q-text" class="form-input" style="padding:0.4rem;font-size:0.8125rem;margin-bottom:0.375rem;" placeholder="Add verification question...">
+              <input type="text" id="new-q-evidence" class="form-input" style="padding:0.4rem;font-size:0.8125rem;margin-bottom:0.5rem;" placeholder="Expected evidence (staff only)...">
+              <button id="btn-add-q" class="btn-forest" style="font-size:0.75rem;padding:0.4rem 0.75rem;min-height:auto;">
+                + Add Question
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sticky Action Bar -->
+        <div class="sticky-actions">
+          <button id="btn-staff-chat" class="btn-forest" style="display:inline-flex;align-items:center;gap:0.35rem;">
+            <span>&#128172;</span> Chat with Student
+          </button>
+
+          ${c.claim_status === 'PENDING' ? `
+            <button id="btn-start-review" class="btn-forest">Start Review</button>
+          ` : ''}
+
+          ${(c.claim_status === 'PENDING' || c.claim_status === 'UNDER_REVIEW') ? `
+            <button id="btn-reject-claim" class="btn-terracotta">Reject Claim</button>
+            <button id="btn-approve-claim" class="btn-saffron">Approve Claim</button>
+          ` : ''}
+
+          ${c.claim_status === 'APPROVED' ? `
+            <div style="display:flex;align-items:center;gap:0.75rem;">
+              <input type="text" id="handover-prn" class="form-input" style="width:180px;padding:0.5rem;" placeholder="Confirm PRN on ID card" value="${c.claimant_prn}">
+              <button id="btn-record-handover" class="btn-saffron">Record Physical Handover</button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+
+      const btnChat = document.getElementById('btn-staff-chat');
+      if (btnChat) {
+        btnChat.addEventListener('click', () => {
+          openClaimMessengerDrawer({ claimId: c.claim_id, userRole: 'STAFF', api });
+        });
+      }
+
+      // Event handlers for action bar
+      const btnStart = document.getElementById('btn-start-review');
+      if (btnStart) {
+        btnStart.addEventListener('click', async () => {
+          try {
+            await api.startReview(c.claim_id);
+            showToast('Claim moved to Under Review', 'info');
+            loadClaimsQueue();
+          } catch (err) { showToast(err.message, 'error'); }
+        });
+      }
+
+      const btnAddQ = document.getElementById('btn-add-q');
+      if (btnAddQ) {
+        btnAddQ.addEventListener('click', async () => {
+          const qText = document.getElementById('new-q-text').value.trim();
+          const qEv = document.getElementById('new-q-evidence').value.trim();
+          if (!qText) return;
+          try {
+            await api.addVerificationQuestion(c.claim_id, qText, qEv || null);
+            showToast('Verification question dispatched to claimant', 'success');
+            loadClaimsQueue();
+          } catch (err) { showToast(err.message, 'error'); }
+        });
+      }
+
+      document.querySelectorAll('.btn-verify-q').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const qid = btn.getAttribute('data-qid');
+          try {
+            await api.verifyQuestionAnswer(c.claim_id, qid, 'VERIFIED');
+            showToast('Verification answer confirmed', 'success');
+            loadClaimsQueue();
+          } catch (err) { showToast(err.message, 'error'); }
+        });
+      });
+
+      const btnApprove = document.getElementById('btn-approve-claim');
+      if (btnApprove) {
+        btnApprove.addEventListener('click', async () => {
+          if (confirm('Approve this claim? This will mark the found item as CLAIMED and notify the student.')) {
+            try {
+              await api.approveClaim(c.claim_id);
+              showToast('Claim APPROVED! Claimant notified to collect at desk.', 'success');
+              loadClaimsQueue();
+            } catch (err) { showToast(err.message, 'error'); }
+          }
+        });
+      }
+
+      const btnReject = document.getElementById('btn-reject-claim');
+      if (btnReject) {
+        btnReject.addEventListener('click', async () => {
+          const reason = prompt('Reason for rejection:');
+          if (reason) {
+            try {
+              await api.rejectClaim(c.claim_id, reason);
+              showToast('Claim rejected', 'info');
+              loadClaimsQueue();
+            } catch (err) { showToast(err.message, 'error'); }
+          }
+        });
+      }
+
+      const btnHandover = document.getElementById('btn-record-handover');
+      if (btnHandover) {
+        btnHandover.addEventListener('click', async () => {
+          const prnInput = document.getElementById('handover-prn').value.trim();
+          if (!prnInput) {
+            showToast('Please verify and enter student PRN', 'warning');
+            return;
+          }
+          if (confirm(`Confirm physical return to student with PRN ${prnInput}?`)) {
+            try {
+              await api.recordHandover(c.claim_id, prnInput);
+              showToast('Handover completed! Final timeline node recorded.', 'success');
+              loadClaimsQueue();
+            } catch (err) { showToast(err.message, 'error'); }
+          }
+        });
+      }
+    }
+
+    document.getElementById('queue-status-filter').addEventListener('change', loadClaimsQueue);
+
+    document.getElementById('btn-scan-qr')?.addEventListener('click', () => {
+      openAdminQrScannerModal({
+        api,
+        onVerified: (claim) => {
+          showToast(`QR Passport Verified for Claim #${claim.claim_id}!`, 'success');
+          loadClaimsQueue().then(() => {
+            const targetEl = document.querySelector(`.queue-item[data-id="${claim.claim_id}"]`);
+            if (targetEl) targetEl.click();
+          });
+        }
+      });
+    });
+
+    loadClaimsQueue();
+  </script>
+</body>
+</html>
+

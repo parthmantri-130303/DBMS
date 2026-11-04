@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Complete Profile — CampusKhoj</title>
+  <link rel="stylesheet" href="../shared/tokens.css">
+  <style>
+    .setup-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .card-box {
+      width: 100%;
+      max-width: 440px;
+      padding: 2.25rem;
+      background: var(--surface-student);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-student);
+      box-shadow: var(--shadow-md);
+    }
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+    .form-label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 0.375rem;
+    }
+    .form-input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0.75rem 1rem;
+      border: 1.5px solid var(--border-student);
+      border-radius: var(--radius-md);
+      font-size: 1rem;
+    }
+    .helper-text {
+      font-size: 0.8125rem;
+      color: var(--muted-student);
+      margin-top: 0.375rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="setup-container">
+    <div class="card-box animate-fade-in">
+      <div style="margin-bottom: 1.5rem;">
+        <span class="chip chip-kondhwa" id="campus-chip">Campus</span>
+        <h2 style="margin: 0.5rem 0 0.25rem 0; color: var(--primary-student);">Complete Profile</h2>
+        <p style="margin: 0; color: var(--muted-student); font-size: 0.875rem;">
+          Help security desk reach you quickly when your lost items are found.
+        </p>
+      </div>
+
+      <form id="profile-form">
+        <div class="form-group">
+          <label for="name" class="form-label">Full Name</label>
+          <input
+            type="text"
+            id="name"
+            class="form-input"
+            placeholder="e.g. Riya Sharma"
+            required
+            autocomplete="name"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="phone" class="form-label">Mobile Phone Number</label>
+          <input
+            type="tel"
+            id="phone"
+            class="form-input"
+            placeholder="e.g. 9876543210"
+            required
+            autocomplete="tel"
+          >
+          <div class="helper-text">Used solely by security staff for verification during physical handover.</div>
+        </div>
+
+        <div class="form-group">
+          <label for="email" class="form-label">College Email (Optional)</label>
+          <input
+            type="email"
+            id="email"
+            class="form-input"
+            placeholder="name.PRN@vit.edu"
+          >
+          <div class="helper-text" id="email-hint">Format: firstname.<PRN>@vit.edu</div>
+        </div>
+
+        <button type="submit" id="save-btn" class="btn-saffron" style="width: 100%; margin-top: 0.5rem;">
+          Save &amp; Enter Portal
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    import { ApiClient } from '../shared/api.js';
+    import { showToast } from '../shared/ui.js';
+
+    const api = new ApiClient('student');
+    const user = api.getUser();
+
+    if (!api.isAuthenticated()) {
+      window.location.href = 'login.html';
+    }
+
+    const prn = user?.prn || '';
+    const campusName = user?.campus_name || (user?.campus_id === 1 ? 'Kondhwa Campus' : 'Bibwewadi Campus');
+    document.getElementById('campus-chip').textContent = campusName;
+    document.getElementById('email-hint').textContent = `Format: firstname.${prn || '<PRN>'}@vit.edu`;
+
+    document.getElementById('profile-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('name').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const email = document.getElementById('email').value.trim() || null;
+      const saveBtn = document.getElementById('save-btn');
+
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+
+      try {
+        await api.updateProfile({ name, phone, email });
+        // Update cached user
+        if (user) {
+          user.name = name;
+          user.profile_completed = true;
+          api.setToken(api.getToken(), user);
+        }
+        showToast('Profile completed! Welcome to CampusKhoj.', 'success');
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 500);
+      } catch (err) {
+        showToast(err.message || 'Failed to save profile', 'error');
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save & Enter Portal';
+      }
+    });
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Reports — CampusKhoj</title>
+  <link rel="stylesheet" href="../shared/tokens.css">
+  <style>
+    .layout-container {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 5rem 1rem;
+    }
+    .report-card {
+      background: var(--surface-student);
+      border: 1px solid var(--border-student);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .tab-pills {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border-student);
+      padding-bottom: 0.5rem;
+    }
+    .tab-pill {
+      background: none;
+      border: none;
+      padding: 0.5rem 1rem;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--muted-student);
+      cursor: pointer;
+      position: relative;
+    }
+    .tab-pill.active {
+      color: var(--primary-student);
+    }
+    .tab-pill.active::after {
+      content: '';
+      position: absolute;
+      bottom: -0.5rem;
+      left: 0;
+      right: 0;
+      height: 2.5px;
+      background: var(--primary-student);
+      border-radius: 2px;
+    }
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--surface-student);
+      border-top: 1px solid var(--border-student);
+      display: flex;
+      justify-content: space-around;
+      padding: 0.5rem 0.25rem;
+      z-index: 1000;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+      color: var(--muted-student);
+      text-decoration: none;
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 0.25rem 0.5rem;
+    }
+    .nav-item.active {
+      color: var(--primary-student);
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div class="layout-container">
+    <div style="margin-bottom: 1.5rem;">
+      <h1 style="margin:0 0 0.25rem 0;font-size:1.75rem;color:var(--primary-student);">My Reports</h1>
+      <p style="margin:0;color:var(--muted-student);font-size:0.875rem;">
+        View, update, or resolve complaints and found items you have reported.
+      </p>
+    </div>
+
+    <div class="tab-pills">
+      <button class="tab-pill active" id="tab-lost" data-tab="lost">My Lost Items</button>
+      <button class="tab-pill" id="tab-found" data-tab="found">My Found Items</button>
+    </div>
+
+    <div id="reports-list">
+      <!-- Rendered via JS -->
+    </div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <a href="index.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#127968;</span>
+      <span>Home</span>
+    </a>
+    <a href="campuses.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#127979;</span>
+      <span>Campuses</span>
+    </a>
+    <a href="report-lost.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#10133;</span>
+      <span>Report</span>
+    </a>
+    <a href="my-claims.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#128221;</span>
+      <span>Claims</span>
+    </a>
+    <a href="notifications.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#128276;</span>
+      <span>Alerts</span>
+    </a>
+  </nav>
+
+  <script type="module">
+    import { ApiClient } from '../shared/api.js';
+    import { escapeHtml, formatDate, showToast, renderSkeletons } from '../shared/ui.js';
+
+    const api = new ApiClient('student');
+    if (!api.isAuthenticated()) {
+      window.location.href = 'login.html';
+    }
+
+    let activeTab = 'lost';
+
+    const tabLost = document.getElementById('tab-lost');
+    const tabFound = document.getElementById('tab-found');
+
+    tabLost.addEventListener('click', () => {
+      activeTab = 'lost';
+      tabLost.classList.add('active');
+      tabFound.classList.remove('active');
+      loadReports();
+    });
+
+    tabFound.addEventListener('click', () => {
+      activeTab = 'found';
+      tabFound.classList.add('active');
+      tabLost.classList.remove('active');
+      loadReports();
+    });
+
+    async function loadReports() {
+      const container = document.getElementById('reports-list');
+      renderSkeletons(container, 2);
+
+      try {
+        const res = activeTab === 'lost'
+          ? await api.getMyLost()
+          : await api.getMyFound();
+
+        const items = res.items || [];
+        if (items.length === 0) {
+          container.innerHTML = `
+            <div style="text-align:center;padding:3rem 1rem;background:var(--surface-student);border-radius:var(--radius-lg);border:1px dashed var(--border-student);">
+              <span style="font-size:3rem;">&#128203;</span>
+              <h3 style="margin:0.5rem 0 0.25rem 0;color:var(--primary-student);">No ${activeTab} reports yet</h3>
+              <p style="margin:0 0 1rem 0;color:var(--muted-student);font-size:0.875rem;">You haven't filed any ${activeTab} items.</p>
+              <a href="${activeTab === 'lost' ? 'report-lost.html' : 'report-found.html'}" class="btn-saffron">
+                File a ${activeTab === 'lost' ? 'Lost' : 'Found'} Report
+              </a>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = items.map(it => {
+          const isLost = activeTab === 'lost';
+          const id = isLost ? it.lost_id : it.found_id;
+          const dateStr = isLost ? it.date_lost : it.date_found;
+
+          return `
+            <div class="report-card animate-fade-in">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem;">
+                <div>
+                  <h3 style="margin:0 0 0.25rem 0;font-size:1.25rem;color:var(--primary-student);">
+                    ${escapeHtml(it.item_name)}
+                  </h3>
+                  <div style="font-size:0.8125rem;color:var(--muted-student);">
+                    ${escapeHtml(it.location_name)} &bull; ${formatDate(dateStr)} &bull; ${escapeHtml(it.campus_name)}
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:0.5rem;">
+                  <span class="chip ${isLost ? 'chip-lost' : 'chip-found'}">${it.status}</span>
+                  ${(it.match_count > 0) ? `<span class="chip chip-kondhwa" style="font-weight:bold;">${it.match_count} matches!</span>` : ''}
+                </div>
+              </div>
+
+              <p style="margin:0 0 1rem 0;font-size:0.875rem;color:var(--text-student);">
+                ${escapeHtml(it.description)}
+              </p>
+
+              <div style="display:flex;justify-content:space-between;align-items:center;padding-top:0.75rem;border-top:1px solid #F0ECE4;">
+                <a href="item-detail.html?type=${activeTab}&id=${id}" style="color:var(--primary-student);font-weight:600;font-size:0.875rem;text-decoration:none;">
+                  View Timeline &amp; Details &rarr;
+                </a>
+                ${(it.status === 'ACTIVE' || it.status === 'MATCHED') ? `
+                  <button class="btn-close-report" data-type="${activeTab}" data-id="${id}" style="background:none;border:none;color:var(--lost);font-weight:600;font-size:0.8125rem;cursor:pointer;">
+                    Close Report
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        document.querySelectorAll('.btn-close-report').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const t = btn.getAttribute('data-type');
+            const rid = btn.getAttribute('data-id');
+            if (confirm(`Are you sure you want to mark this ${t} report as closed?`)) {
+              try {
+                if (t === 'lost') await api.closeLost(rid);
+                else await api.closeFound(rid);
+                showToast('Report closed successfully', 'info');
+                loadReports();
+              } catch (err) {
+                showToast(err.message || 'Failed to close report', 'error');
+              }
+            }
+          });
+        });
+
+      } catch (err) {
+        container.innerHTML = `<div style="color:var(--danger);padding:1rem;">Error: ${err.message}</div>`;
+      }
+    }
+
+    loadReports();
+  </script>
+</body>
+</html>
+

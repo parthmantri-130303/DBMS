@@ -1,0 +1,8 @@
+.env
+*.env
+__pycache__/
+media/lost/*
+!media/lost/.gitkeep
+media/found/*
+!media/found/.gitkeep
+

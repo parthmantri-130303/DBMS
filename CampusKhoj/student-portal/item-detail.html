@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Item Details — CampusKhoj</title>
+  <link rel="stylesheet" href="../shared/tokens.css">
+  <style>
+    .layout-container {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 5rem 1rem;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin-top: 1.5rem;
+    }
+
+    @media (max-width: 768px) {
+      .detail-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .info-panel {
+      background: var(--surface-student);
+      border: 1px solid var(--border-student);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .image-preview-box {
+      width: 100%;
+      height: 260px;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: #F4EFE6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.25rem;
+      border: 1px solid var(--border-student);
+    }
+
+    .image-preview-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.625rem 0;
+      border-bottom: 1px solid #F0ECE4;
+      font-size: 0.875rem;
+    }
+
+    .detail-label {
+      color: var(--muted-student);
+      font-weight: 500;
+    }
+
+    .detail-value {
+      color: var(--text-student);
+      font-weight: 600;
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      z-index: 2000;
+    }
+
+    .modal-box {
+      background: var(--surface-student);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--surface-student);
+      border-top: 1px solid var(--border-student);
+      display: flex;
+      justify-content: space-around;
+      padding: 0.5rem 0.25rem;
+      z-index: 1000;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+      color: var(--muted-student);
+      text-decoration: none;
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 0.25rem 0.5rem;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="layout-container">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+      <a href="campuses.html"
+        style="color:var(--primary-student);text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:0.375rem;">
+        &larr; Back to Listings
+      </a>
+      <button id="btn-print-poster" type="button" class="btn-saffron" style="font-size:0.8125rem; padding:0.4rem 0.85rem; border-radius:var(--radius-pill); cursor:pointer; display:inline-flex; align-items:center; gap:0.35rem;">
+        <span>&#128438;</span> Generate Notice Poster
+      </button>
+    </div>
+
+    <!-- Visual Lifecycle Status Stepper -->
+    <div class="lifecycle-tracker-card animate-fade-in" id="lifecycle-stepper-box">
+      <div class="stepper-track">
+        <div class="step-node active" id="step-1">
+          <div class="step-circle">1</div>
+          <div class="step-label">Report Logged</div>
+          <div class="step-sub" id="step-1-sub">System Registered</div>
+        </div>
+        <div class="step-connector" id="conn-1"></div>
+        <div class="step-node" id="step-2">
+          <div class="step-circle">2</div>
+          <div class="step-label">Security Custody</div>
+          <div class="step-sub" id="step-2-sub">Desk Verified</div>
+        </div>
+        <div class="step-connector" id="conn-2"></div>
+        <div class="step-node" id="step-3">
+          <div class="step-circle">3</div>
+          <div class="step-label">Portal Live &amp; Matcher</div>
+          <div class="step-sub" id="step-3-sub">Active Search</div>
+        </div>
+        <div class="step-connector" id="conn-3"></div>
+        <div class="step-node" id="step-4">
+          <div class="step-circle">4</div>
+          <div class="step-label">Claim Verification</div>
+          <div class="step-sub" id="step-4-sub">Proof Review</div>
+        </div>
+        <div class="step-connector" id="conn-4"></div>
+        <div class="step-node" id="step-5">
+          <div class="step-circle">5</div>
+          <div class="step-label">Reunited</div>
+          <div class="step-sub" id="step-5-sub">Handover Complete</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-grid">
+      <!-- Left: Item Public Details -->
+      <div class="info-panel animate-fade-in">
+        <div id="item-image-box" class="image-preview-box" style="display:none;">
+          <img id="item-image" src="" alt="Item photo">
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+          <span class="chip chip-found" id="type-chip">Found</span>
+          <span style="font-size:0.8125rem;color:var(--muted-student);" id="status-pill">Status: ACTIVE</span>
+        </div>
+
+        <h1 style="margin:0 0 0.5rem 0;color:var(--primary-student);font-size:1.625rem;" id="item-title">Loading...</h1>
+        <p style="margin:0 0 1.25rem 0;color:var(--text-student);font-size:0.9375rem;line-height:1.6;" id="item-desc">
+        </p>
+
+        <div class="detail-row">
+          <span class="detail-label">Campus</span>
+          <span class="detail-value" id="item-campus">...</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Category</span>
+          <span class="detail-value" id="item-category">...</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Location</span>
+          <span class="detail-value" id="item-location">...</span>
+        </div>
+        <div class="detail-row" id="row-room" style="display:none;">
+          <span class="detail-label">Room / Lab</span>
+          <span class="detail-value" id="item-room">...</span>
+        </div>
+        <div class="detail-row" id="row-spot" style="display:none;">
+          <span class="detail-label">Spot / Landmark</span>
+          <span class="detail-value" id="item-spot">...</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Reported Date</span>
+          <span class="detail-value" id="item-date">...</span>
+        </div>
+        <div class="detail-row" id="row-brand" style="display:none;">
+          <span class="detail-label">Brand</span>
+          <span class="detail-value" id="item-brand">...</span>
+        </div>
+        <div class="detail-row" id="row-color" style="display:none;">
+          <span class="detail-label">Color</span>
+          <span class="detail-value" id="item-color">...</span>
+        </div>
+        <div class="detail-row" id="row-custody" style="display:none;">
+          <span class="detail-label">Custody</span>
+          <span class="detail-value" id="item-custody">...</span>
+        </div>
+
+        <!-- Action Button for Claim -->
+        <div id="action-panel" style="margin-top:1.5rem;">
+          <button id="btn-claim" class="btn-saffron" style="width:100%;display:none;">
+            This Is Mine (Claim Item)
+          </button>
+          <div id="claim-restriction"
+            style="display:none;background:#FDF4EB;color:#8B4513;padding:0.75rem;border-radius:var(--radius-md);font-size:0.8125rem;">
+            <strong>Browse Only:</strong> You can only file claims for items found in your registered campus.
+          </div>
+
+          <!-- Claimed Item & Double Verification Panel -->
+          <div id="claimed-panel" style="display:none; margin-top:0.75rem;">
+            <div style="background:#EEF4FA; border:1.5px solid #BDD3E6; border-radius:var(--radius-md); padding:1rem;">
+              <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.35rem;">
+                <span style="font-size:1.25rem;">🔒</span>
+                <strong style="color:#2C5282; font-size:0.95rem;">Status: Already Claimed / Handed Over</strong>
+                <span class="chip" style="background:#2C5282; color:#FFF; font-size:0.75rem; margin-left:auto;">Claimed</span>
+              </div>
+              <p style="margin:0 0 0.85rem 0; font-size:0.8125rem; color:#4A5568; line-height:1.5;">
+                This item has already been verified and claimed by a student. To protect student privacy, confidential claimant details and personal records are restricted.
+              </p>
+              <div id="dispute-box">
+                <button id="btn-open-dispute" type="button" class="btn-outline" style="width:100%; border-color:#2C5282; color:#2C5282; font-weight:600; display:flex; align-items:center; justify-content:center; gap:0.4rem; padding:0.6rem;">
+                  <span>🛡️</span> Believe this is yours? Request Double Verification
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Timeline & Matches -->
+      <div class="animate-fade-in stagger-1">
+        <!-- Matches Panel (if owner of lost item) -->
+        <div id="matches-container"
+          style="display:none;margin-bottom:1.5rem;background:#EBF5EF;border:1.5px solid #BFD9C5;border-radius:var(--radius-lg);padding:1.25rem;">
+          <h3 style="margin:0 0 0.5rem 0;color:var(--primary-student);font-size:1.125rem;">
+            &#10024; Suggested Matches for You
+          </h3>
+          <p style="margin:0 0 1rem 0;font-size:0.8125rem;color:var(--muted-student);">
+            The system discovered possible matching items reported found in your campus:
+          </p>
+          <div id="matches-list"></div>
+        </div>
+
+        <!-- Timeline Section -->
+        <div class="info-panel">
+          <h3 style="margin:0 0 1.25rem 0;color:var(--primary-student);font-size:1.25rem;">Activity Timeline</h3>
+          <div id="timeline-container">
+            <!-- Timeline rendered via shared/ui.js -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Claim Submission Modal -->
+  <div id="claim-modal" class="modal-backdrop">
+    <div class="modal-box" style="max-width: 520px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+        <h3 style="margin:0;color:var(--primary-student);font-size:1.375rem;">File Ownership Claim</h3>
+        <button type="button" id="modal-close-x" style="background:none; border:none; font-size:1.5rem; color:var(--muted-student); cursor:pointer; padding:0; min-height:auto; min-width:auto;">&times;</button>
+      </div>
+      <p style="margin:0 0 1.25rem 0;font-size:0.875rem;color:var(--muted-student);line-height:1.5;">
+        Provide detailed evidence proving this item belongs to you. You can attach a <strong>buying invoice, payment receipt, warranty card, or photo</strong>.
+      </p>
+
+      <form id="claim-form">
+        <!-- Proof Type -->
+        <div style="margin-bottom:1rem;">
+          <label for="proof-type" style="display:block;font-size:0.875rem;font-weight:600;margin-bottom:0.375rem;">
+            Evidence / Proof Type *
+          </label>
+          <select id="proof-type" style="width:100%;padding:0.625rem 0.75rem;border:1.5px solid var(--border-student);border-radius:var(--radius-md);font-family:inherit;font-size:0.9375rem;background:#FFF;" required>
+            <option value="RECEIPT">🧾 Purchase Receipt / Store Bill / Tax Invoice</option>
+            <option value="PHOTO_WITH_ITEM">📸 Previous Photo of You with the Item</option>
+            <option value="STUDENT_ID">🆔 College ID / Serial Number Card</option>
+            <option value="WARRANTY">📦 Original Packaging / Warranty Certificate</option>
+            <option value="OTHER">📝 Other Written / Digital Proof</option>
+          </select>
+        </div>
+
+        <!-- Description -->
+        <div style="margin-bottom:1rem;">
+          <label for="claim-desc" style="display:block;font-size:0.875rem;font-weight:600;margin-bottom:0.375rem;">
+            Detailed Distinguishing Marks &amp; Evidence *
+          </label>
+          <textarea id="claim-desc" rows="3"
+            style="width:100%;box-sizing:border-box;padding:0.75rem;border:1.5px solid var(--border-student);border-radius:var(--radius-md);font-family:inherit;font-size:0.9375rem;"
+            placeholder="e.g. Purchased on Amazon on Oct 12, serial number ending in 894, sticker on left corner..."
+            required></textarea>
+        </div>
+
+        <!-- Proof Upload Box -->
+        <div style="margin-bottom:1.5rem;">
+          <label style="display:block;font-size:0.875rem;font-weight:600;margin-bottom:0.375rem;">
+            Attach Receipt / Proof Document (Optional but Recommended)
+          </label>
+          <div style="border: 2px dashed #D6CEC0; border-radius: var(--radius-md); padding: 1rem; text-align: center; background: #FAF8F4;" id="proof-dropzone">
+            <span style="font-size: 1.5rem;">📄</span>
+            <div style="font-size:0.8125rem; font-weight:600; color:var(--primary-student); margin-top:0.25rem;">
+              Click to select Receipt / Photo
+            </div>
+            <div style="font-size:0.75rem; color:var(--muted-student); margin-top:0.125rem;">
+              JPEG, PNG, WebP up to 3 MB
+            </div>
+            <input type="file" id="proof-file" accept="image/jpeg,image/png,image/webp" style="display:none;">
+            <div id="proof-preview-name" style="display:none; font-size:0.8125rem; color:var(--success); font-weight:600; margin-top:0.5rem;"></div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
+          <button type="button" id="modal-cancel-btn" class="btn-outline">Cancel</button>
+          <button type="submit" id="modal-submit-btn" class="btn-saffron">Submit Verified Claim</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <a href="index.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#127968;</span>
+      <span>Home</span>
+    </a>
+    <a href="campuses.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#127979;</span>
+      <span>Campuses</span>
+    </a>
+    <a href="report-lost.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#10133;</span>
+      <span>Report</span>
+    </a>
+    <a href="my-claims.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#128221;</span>
+      <span>Claims</span>
+    </a>
+    <a href="notifications.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#128276;</span>
+      <span>Alerts</span>
+    </a>
+  </nav>
+
+  <script type="module">
+    import { ApiClient } from '../shared/api.js';
+    import { escapeHtml, formatDate, renderTimeline, showToast, showPosterGeneratorModal, openDoubleVerificationModal, attachMessagesTrigger } from '../shared/ui.js';
+
+    const api = new ApiClient('student');
+    attachMessagesTrigger({ api });
+    const user = api.getUser();
+
+    const params = new URLSearchParams(window.location.search);
+    const itemType = params.get('type') || 'found';
+    const itemId = parseInt(params.get('id'), 10);
+
+    if (!itemId) {
+      window.location.href = 'campuses.html';
+    }
+
+    async function loadItem() {
+      try {
+        const data = itemType === 'found'
+          ? await api.getFoundDetail(itemId)
+          : await api.getLostDetail(itemId);
+
+        const item = data.item;
+        document.getElementById('item-title').textContent = item.item_name;
+        document.getElementById('item-desc').textContent = item.description;
+        document.getElementById('item-campus').textContent = item.campus_name;
+        document.getElementById('item-category').textContent = item.category_name;
+        let locText = item.location_name;
+        if (item.building && item.building !== item.location_name && item.building !== 'Campus Area') {
+          locText = `${item.location_name} (${item.building})`;
+        }
+        document.getElementById('item-location').textContent = locText;
+        document.getElementById('item-date').textContent = formatDate(itemType === 'found' ? item.date_found : item.date_lost);
+        document.getElementById('status-pill').textContent = `Status: ${item.status}`;
+
+        const typeChip = document.getElementById('type-chip');
+        if (itemType === 'found') {
+          typeChip.className = 'chip chip-found';
+          typeChip.textContent = 'Found';
+          if (item.custody) {
+            document.getElementById('row-custody').style.display = 'flex';
+            document.getElementById('item-custody').textContent = item.custody === 'AT_DESK' ? 'At Security Desk' : 'With Finder';
+          }
+        } else {
+          typeChip.className = 'chip chip-lost';
+          typeChip.textContent = 'Lost';
+        }
+
+        if (item.brand) {
+          document.getElementById('row-brand').style.display = 'flex';
+          document.getElementById('item-brand').textContent = item.brand;
+        }
+        if (item.color) {
+          document.getElementById('row-color').style.display = 'flex';
+          document.getElementById('item-color').textContent = item.color;
+        }
+        if (item.room_no) {
+          document.getElementById('row-room').style.display = 'flex';
+          document.getElementById('item-room').textContent = item.room_no;
+        }
+        if (item.specific_spot) {
+          document.getElementById('row-spot').style.display = 'flex';
+          document.getElementById('item-spot').textContent = item.specific_spot;
+        }
+
+        if (item.image_url) {
+          const imgBox = document.getElementById('item-image-box');
+          const img = document.getElementById('item-image');
+          img.src = item.image_url;
+          imgBox.style.display = 'flex';
+        }
+
+        // Configure Notice Poster Button
+        const posterBtn = document.getElementById('btn-print-poster');
+        if (posterBtn) {
+          posterBtn.addEventListener('click', () => {
+            showPosterGeneratorModal({ itemType, itemId, api });
+          });
+        }
+
+        // Configure Claim button or Claimed/Dispute panel if found item
+        if (itemType === 'found') {
+          const isClaimed = item.is_claimed || ['CLAIMED', 'HANDED_OVER', 'CLOSED'].includes(item.status);
+          if (isClaimed) {
+            document.getElementById('claimed-panel').style.display = 'block';
+            document.getElementById('btn-claim').style.display = 'none';
+            document.getElementById('claim-restriction').style.display = 'none';
+
+            const disputeBox = document.getElementById('dispute-box');
+            if (item.user_has_disputed) {
+              disputeBox.innerHTML = `
+                <div style="background:#E2F0D9; color:#276749; padding:0.6rem 0.85rem; border-radius:var(--radius-sm); font-size:0.8125rem; font-weight:600; display:flex; align-items:center; gap:0.4rem;">
+                  <span>&#10003;</span> Double-verification dispute submitted. Security desk will review records and contact you.
+                </div>
+              `;
+            } else {
+              disputeBox.innerHTML = `
+                <button id="btn-open-dispute" type="button" class="btn-outline" style="width:100%; border-color:#2C5282; color:#2C5282; font-weight:600; display:flex; align-items:center; justify-content:center; gap:0.4rem; padding:0.6rem; cursor:pointer;">
+                  <span>&#128737;&#65039;</span> Believe this is yours? Request Double Verification
+                </button>
+              `;
+              document.getElementById('btn-open-dispute').addEventListener('click', () => {
+                openDoubleVerificationModal({ itemId, itemName: item.item_name, api, onSubmitted: loadItem });
+              });
+            }
+          } else if (item.status === 'ACTIVE' || item.status === 'MATCHED') {
+            document.getElementById('claimed-panel').style.display = 'none';
+            if (user && item.campus_id === user.campus_id) {
+              document.getElementById('btn-claim').style.display = 'block';
+            } else {
+              document.getElementById('claim-restriction').style.display = 'block';
+            }
+          }
+        }
+
+        // Update Multi-Stage Lifecycle Stepper
+        updateLifecycleStepper(item, itemType, []);
+
+        // If lost item owner, load matches
+        if (itemType === 'lost' && user && item.user_id === user.user_id) {
+          loadMatches(itemId);
+        }
+
+        // Load Timeline and update stepper with real item_events
+        loadTimelineData(item);
+
+      } catch (err) {
+        showToast(err.message || 'Failed to load item', 'error');
+      }
+    }
+
+    function updateLifecycleStepper(item, itemType, events = []) {
+      const s1 = document.getElementById('step-1');
+      const s2 = document.getElementById('step-2');
+      const s3 = document.getElementById('step-3');
+      const s4 = document.getElementById('step-4');
+      const s5 = document.getElementById('step-5');
+
+      const c1 = document.getElementById('conn-1');
+      const c2 = document.getElementById('conn-2');
+      const c3 = document.getElementById('conn-3');
+      const c4 = document.getElementById('conn-4');
+
+      const hasEvent = (type) => events.some(e => e.event_type === type);
+      const isClaimApproved = hasEvent('CLAIM_APPROVED');
+      const isHandedOver = item.status === 'HANDED_OVER' || hasEvent('HANDED_OVER');
+      const isClaimSubmitted = hasEvent('CLAIM_SUBMITTED') || item.status === 'CLAIMED';
+      const isClaimedState = ['CLAIMED', 'HANDED_OVER', 'CLOSED'].includes(item.status);
+      const isDesk = item.custody === 'AT_DESK' || hasEvent('CUSTODY_CHANGED');
+
+      // Step 1: Report Registered
+      s1.className = 'step-node completed';
+      s1.querySelector('.step-circle').innerHTML = '&#10003;';
+      document.getElementById('step-1-sub').textContent = formatDate(itemType === 'found' ? item.date_found : item.date_lost);
+
+      // Step 2: Custody / Reached Security Desk
+      if (itemType === 'found') {
+        if (isDesk || isClaimedState) {
+          s2.className = 'step-node completed';
+          s2.querySelector('.step-circle').innerHTML = '&#10003;';
+          document.getElementById('step-2-sub').textContent = 'At Security Desk';
+          c1.className = 'step-connector filled';
+        } else {
+          s2.className = 'step-node active';
+          s2.querySelector('.step-circle').textContent = '2';
+          document.getElementById('step-2-sub').textContent = 'With Finder';
+          c1.className = 'step-connector';
+        }
+      } else {
+        s2.className = 'step-node completed';
+        s2.querySelector('.step-circle').innerHTML = '&#10003;';
+        document.getElementById('step-2-sub').textContent = 'Report Verified';
+        c1.className = 'step-connector filled';
+      }
+
+      // Step 3: Portal Live & Matching in Progress (Rule-based)
+      if (isClaimedState || isClaimApproved || hasEvent('MATCH_FOUND')) {
+        s3.className = 'step-node completed';
+        s3.querySelector('.step-circle').innerHTML = '&#10003;';
+        document.getElementById('step-3-sub').textContent = isClaimedState ? 'Owner Found' : 'Match Identified';
+        c2.className = 'step-connector filled';
+      } else {
+        s3.className = 'step-node active';
+        s3.querySelector('.step-circle').textContent = '3';
+        document.getElementById('step-3-sub').textContent = 'Live on Portal & Matching in Progress';
+        c2.className = 'step-connector';
+      }
+
+      // Step 4: Claim Verification
+      if (isHandedOver || isClaimApproved) {
+        s4.className = 'step-node completed';
+        s4.querySelector('.step-circle').innerHTML = '&#10003;';
+        document.getElementById('step-4-sub').textContent = 'Claim Verified & Handover Ready';
+        c3.className = 'step-connector filled';
+      } else if (isClaimSubmitted) {
+        s4.className = 'step-node active';
+        s4.querySelector('.step-circle').textContent = '4';
+        document.getElementById('step-4-sub').textContent = 'Proof Under Verification';
+        c3.className = 'step-connector';
+      } else {
+        s4.className = 'step-node';
+        s4.querySelector('.step-circle').textContent = '4';
+        document.getElementById('step-4-sub').textContent = 'Waiting for Owner';
+        c3.className = 'step-connector';
+      }
+
+      // Step 5: Reunited / Handover Completed
+      if (isHandedOver) {
+        s5.className = 'step-node completed';
+        s5.querySelector('.step-circle').innerHTML = '&#10003;';
+        document.getElementById('step-5-sub').textContent = 'Handed Over to Student';
+        c4.className = 'step-connector filled';
+      } else if (isClaimApproved) {
+        s5.className = 'step-node active';
+        s5.querySelector('.step-circle').textContent = '5';
+        document.getElementById('step-5-sub').textContent = 'Ready for Pickup';
+        c4.className = 'step-connector';
+      } else {
+        s5.className = 'step-node';
+        s5.querySelector('.step-circle').textContent = '5';
+        document.getElementById('step-5-sub').textContent = 'Awaiting Pickup';
+        c4.className = 'step-connector';
+      }
+    }
+
+    async function loadMatches(lostId) {
+      try {
+        const res = await api.getLostMatches(lostId);
+        const matches = res.matches || [];
+        if (matches.length > 0) {
+          const container = document.getElementById('matches-container');
+          const list = document.getElementById('matches-list');
+          container.style.display = 'block';
+          list.innerHTML = matches.map(m => {
+            let bk = {};
+            try {
+              bk = typeof m.breakdown === 'string' ? JSON.parse(m.breakdown) : (m.breakdown || {});
+            } catch(e) {}
+
+            return `
+            <div style="background:#fff;border-radius:var(--radius-md);padding:0.875rem;margin-bottom:0.75rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
+              <div>
+                <strong style="color:var(--primary-student);">${escapeHtml(m.item_name)}</strong>
+                <div style="font-size:0.75rem;color:var(--muted-student);margin-top:0.125rem;">
+                  Found on ${formatDate(m.date_found)} at ${escapeHtml(m.location_name)}
+                </div>
+                <div style="display:flex;gap:0.35rem;flex-wrap:wrap;margin-top:0.35rem;">
+                  <span style="font-size:0.7rem;background:#F1F5F9;padding:0.15rem 0.4rem;border-radius:4px;color:#475569;">📍 Loc +${bk.location || 0}%</span>
+                  <span style="font-size:0.7rem;background:#F1F5F9;padding:0.15rem 0.4rem;border-radius:4px;color:#475569;">🏷️ Cat +${bk.category || 0}%</span>
+                  ${bk.brand ? `<span style="font-size:0.7rem;background:#F1F5F9;padding:0.15rem 0.4rem;border-radius:4px;color:#475569;">🏷️ Brand +${bk.brand}%</span>` : ''}
+                  ${bk.color ? `<span style="font-size:0.7rem;background:#F1F5F9;padding:0.15rem 0.4rem;border-radius:4px;color:#475569;">🎨 Color +${bk.color}%</span>` : ''}
+                </div>
+              </div>
+              <div style="text-align:right;">
+                <span class="chip chip-kondhwa" style="font-weight:bold;">${m.score}% match</span>
+                <div style="margin-top:0.35rem;">
+                  <a href="item-detail.html?type=found&id=${m.found_id}" style="color:var(--primary-student);font-size:0.8125rem;font-weight:600;text-decoration:none;">Inspect &rarr;</a>
+                </div>
+              </div>
+            </div>
+          `;
+          }).join('');
+        }
+      } catch { }
+    }
+
+    async function loadTimelineData(item) {
+      try {
+        const res = await api.getTimeline(itemType, itemId);
+        const events = res.events || [];
+        renderTimeline(document.getElementById('timeline-container'), events);
+        if (item) {
+          updateLifecycleStepper(item, itemType, events);
+        }
+      } catch { }
+    }
+
+    // Modal Claim Handlers
+    const modal = document.getElementById('claim-modal');
+    const proofFile = document.getElementById('proof-file');
+    const proofDropzone = document.getElementById('proof-dropzone');
+    const proofPreviewName = document.getElementById('proof-preview-name');
+
+    proofDropzone.addEventListener('click', () => proofFile.click());
+    proofFile.addEventListener('change', () => {
+      if (proofFile.files && proofFile.files[0]) {
+        proofPreviewName.textContent = `Attached: ${proofFile.files[0].name} (${(proofFile.files[0].size/1024).toFixed(0)} KB)`;
+        proofPreviewName.style.display = 'block';
+      }
+    });
+
+    document.getElementById('btn-claim').addEventListener('click', () => {
+      modal.style.display = 'flex';
+    });
+    document.getElementById('modal-cancel-btn').addEventListener('click', () => {
+      modal.style.display = 'none';
+    });
+    document.getElementById('modal-close-x').addEventListener('click', () => {
+      modal.style.display = 'none';
+    });
+
+    document.getElementById('claim-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const desc = document.getElementById('claim-desc').value.trim();
+      const proofType = document.getElementById('proof-type').value;
+      const submitBtn = document.getElementById('modal-submit-btn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting Proof...';
+
+      const formData = new FormData();
+      formData.append('claim_description', desc);
+      formData.append('proof_type', proofType);
+      if (proofFile.files && proofFile.files[0]) {
+        formData.append('proof', proofFile.files[0]);
+      }
+
+      try {
+        const res = await api.submitClaim(itemId, formData);
+        showToast('Claim and proof document submitted successfully! Security desk staff will review.', 'success');
+        modal.style.display = 'none';
+        setTimeout(() => {
+          window.location.href = 'my-claims.html';
+        }, 600);
+      } catch (err) {
+        showToast(err.message || 'Failed to submit claim', 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Verified Claim';
+      }
+    });
+
+    loadItem();
+  </script>
+</body>
+
+</html>

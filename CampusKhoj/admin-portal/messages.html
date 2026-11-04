@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulated Message Log — CampusKhoj Admin</title>
+  <link rel="stylesheet" href="../shared/tokens.css">
+  <style>
+    body {
+      background-color: var(--bg-admin);
+      color: var(--text-admin);
+      display: flex;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .sidebar {
+      width: 240px;
+      background: var(--surface-admin);
+      border-right: 1px solid var(--border-admin);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .sidebar-brand {
+      padding: 1.5rem 1.25rem;
+      border-bottom: 1px solid var(--border-admin);
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .nav-links {
+      list-style: none;
+      padding: 1rem 0;
+      margin: 0;
+    }
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1.25rem;
+      color: var(--muted-admin);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.9375rem;
+      transition: all 150ms ease;
+    }
+    .nav-link:hover, .nav-link.active {
+      color: #FFFFFF;
+      background: #33403A;
+      border-left: 3px solid var(--accent);
+    }
+    .main-content {
+      flex: 1;
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+    }
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border-admin);
+      margin-bottom: 1.5rem;
+    }
+    .filters-bar {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      flex-wrap: wrap;
+      background: var(--surface-admin);
+      border: 1px solid var(--border-admin);
+      padding: 1rem 1.25rem;
+      border-radius: var(--radius-lg);
+      margin-bottom: 1.5rem;
+    }
+    .filter-control {
+      padding: 0.5rem 0.875rem;
+      background: #181E1A;
+      border: 1px solid var(--border-admin);
+      border-radius: var(--radius-sm);
+      color: #FFF;
+      font-size: 0.875rem;
+    }
+    .filter-control:focus {
+      outline: 2px solid var(--accent);
+    }
+    .table-container {
+      background: var(--surface-admin);
+      border: 1px solid var(--border-admin);
+      border-radius: var(--radius-lg);
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      text-align: left;
+    }
+    th {
+      padding: 0.875rem 1rem;
+      border-bottom: 1px solid var(--border-admin);
+      color: var(--muted-admin);
+      font-weight: 600;
+      font-size: 0.8125rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    td {
+      padding: 0.875rem 1rem;
+      border-bottom: 1px solid #232B25;
+      vertical-align: top;
+    }
+    tbody tr:hover {
+      background: #232C25;
+    }
+    .badge-sim {
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      background: #3B2E1E;
+      color: #FDBA74;
+      border: 1px solid #7C4A1E;
+    }
+    .channel-chip {
+      display: inline-block;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .channel-sms { background: #1E3A8A; color: #BFDBFE; }
+    .channel-whatsapp { background: #064E3B; color: #A7F3D0; }
+    .channel-email { background: #4C1D95; color: #DDD6FE; }
+    .banner-simulated {
+      background: #2D2319;
+      border: 1px solid #7C4A1E;
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      color: #FDBA74;
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+<body class="admin-theme">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div>
+      <div class="sidebar-brand">
+        <span style="display:inline-block;width:10px;height:10px;background:var(--accent);border-radius:50%;"></span>
+        CampusKhoj Desk
+      </div>
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link">&#128202; Dashboard</a></li>
+        <li><a href="items.html" class="nav-link">&#128221; All Items &amp; CSV</a></li>
+        <li><a href="claims.html" class="nav-link">&#128270; Claims Queue</a></li>
+        <li><a href="locations.html" class="nav-link">&#128205; Locations</a></li>
+        <li><a href="messages.html" class="nav-link active">&#128172; Message Log</a></li>
+        <li><a href="users.html" class="nav-link">&#128101; PRN &amp; Students</a></li>
+        <li id="staff-nav-item" style="display:none;"><a href="staff.html" class="nav-link">&#128110; Staff Accounts</a></li>
+        <li><a href="audit.html" class="nav-link">&#128220; Audit Log</a></li>
+      </ul>
+    </div>
+    <div style="padding: 1.25rem; border-top: 1px solid var(--border-admin);">
+      <div style="font-size:0.875rem;font-weight:600;color:#FFF;" id="staff-name">Staff Admin</div>
+      <div style="font-size:0.75rem;color:var(--muted-admin);" id="staff-role">Role: SUPER_ADMIN</div>
+      <button id="btn-logout" style="margin-top:0.75rem;background:none;border:none;color:var(--lost);font-size:0.8125rem;font-weight:600;cursor:pointer;padding:0;">
+        Sign Out &rarr;
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="top-bar">
+      <div>
+        <h1 style="font-family:var(--font-heading);font-size:1.5rem;color:#FFF;margin:0 0 0.25rem 0;">Simulated Message Outbox</h1>
+        <p style="color:var(--muted-admin);font-size:0.875rem;margin:0;">Database-backed transactional log of simulated SMS and chat notifications sent to students.</p>
+      </div>
+      <button id="btn-refresh" class="btn" style="background:#232C25;border:1px solid var(--border-admin);color:#FFF;cursor:pointer;padding:0.5rem 1rem;border-radius:var(--radius-sm);">
+        &#8635; Refresh
+      </button>
+    </div>
+
+    <!-- Honesty Notice Banner -->
+    <div class="banner-simulated">
+      <span style="font-size:1.25rem;">&#9888;&#65039;</span>
+      <div>
+        <strong>Demonstration Simulator:</strong> No real SMS or WhatsApp messages are transmitted over carrier networks. Messages are recorded transactionally into <code>message_outbox</code> to show examiners exact notification triggers and masked privacy safeguards.
+      </div>
+    </div>
+
+    <!-- Filters Bar -->
+    <div class="filters-bar">
+      <div id="campus-filter-group" style="display:none;">
+        <select id="filter-campus" class="filter-control">
+          <option value="">All Campuses</option>
+          <option value="1">Kondhwa Campus</option>
+          <option value="2">Bibwewadi Campus</option>
+        </select>
+      </div>
+
+      <div>
+        <select id="filter-channel" class="filter-control">
+          <option value="">All Channels</option>
+          <option value="SMS">SMS</option>
+          <option value="WHATSAPP">WhatsApp</option>
+          <option value="EMAIL">Email</option>
+        </select>
+      </div>
+
+      <div>
+        <select id="filter-template" class="filter-control">
+          <option value="">All Templates</option>
+          <option value="MATCH_FOUND">Match Found</option>
+          <option value="CLAIM_SUBMITTED">Claim Submitted</option>
+          <option value="QUESTION_ASKED">Verification Question</option>
+          <option value="CLAIM_APPROVED">Claim Approved</option>
+          <option value="CLAIM_REJECTED">Claim Rejected</option>
+          <option value="HANDOVER_COMPLETED">Handover Completed</option>
+          <option value="DOUBLE_VERIFICATION">Double Verification</option>
+        </select>
+      </div>
+
+      <div style="flex:1;min-width:180px;">
+        <input type="text" id="filter-prn" class="filter-control" placeholder="Search student PRN or name..." style="width:100%;box-sizing:border-box;">
+      </div>
+    </div>
+
+    <!-- Messages Table -->
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Campus</th>
+            <th>Student</th>
+            <th>Channel</th>
+            <th>Recipient (Masked)</th>
+            <th>Template</th>
+            <th>Message Body Preview</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="messages-tbody">
+          <tr>
+            <td colspan="8" style="text-align:center;padding:2rem;color:var(--muted-admin);">Loading simulated messages...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1.25rem;">
+      <span id="page-info" style="font-size:0.875rem;color:var(--muted-admin);">Showing 0 messages</span>
+      <div style="display:flex;gap:0.5rem;">
+        <button id="btn-prev" class="btn" style="background:#181E1A;border:1px solid var(--border-admin);color:#FFF;padding:0.4rem 0.8rem;border-radius:4px;cursor:pointer;" disabled>&larr; Prev</button>
+        <button id="btn-next" class="btn" style="background:#181E1A;border:1px solid var(--border-admin);color:#FFF;padding:0.4rem 0.8rem;border-radius:4px;cursor:pointer;" disabled>Next &rarr;</button>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { api } from '../shared/api.js';
+    import { escapeHtml, formatDateTime } from '../shared/ui.js';
+
+    let user = null;
+    let page = 1;
+    const limit = 20;
+
+    async function init() {
+      try {
+        user = await api.getMe();
+        if (!['STAFF', 'SUPER_ADMIN'].includes(user.role)) {
+          window.location.href = 'login.html';
+          return;
+        }
+
+        document.getElementById('staff-name').textContent = user.full_name;
+        document.getElementById('staff-role').textContent = `Role: ${user.role} (${user.campus_code || 'ALL'})`;
+
+        if (user.role === 'SUPER_ADMIN') {
+          const staffNav = document.getElementById('staff-nav-item');
+          if (staffNav) staffNav.style.display = 'block';
+          document.getElementById('campus-filter-group').style.display = 'block';
+        }
+
+        document.getElementById('btn-logout').addEventListener('click', () => {
+          api.logout();
+          window.location.href = 'login.html';
+        });
+
+        document.getElementById('btn-refresh').addEventListener('click', () => loadMessages());
+        document.getElementById('filter-channel').addEventListener('change', () => { page = 1; loadMessages(); });
+        document.getElementById('filter-template').addEventListener('change', () => { page = 1; loadMessages(); });
+        document.getElementById('filter-campus').addEventListener('change', () => { page = 1; loadMessages(); });
+        document.getElementById('filter-prn').addEventListener('input', debounce(() => { page = 1; loadMessages(); }, 300));
+
+        document.getElementById('btn-prev').addEventListener('click', () => {
+          if (page > 1) { page--; loadMessages(); }
+        });
+        document.getElementById('btn-next').addEventListener('click', () => {
+          page++; loadMessages();
+        });
+
+        loadMessages();
+      } catch (err) {
+        window.location.href = 'login.html';
+      }
+    }
+
+    async function loadMessages() {
+      const tbody = document.getElementById('messages-tbody');
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--muted-admin);">Loading messages...</td></tr>';
+
+      const params = {
+        page,
+        limit,
+        channel: document.getElementById('filter-channel').value,
+        template: document.getElementById('filter-template').value,
+        search: document.getElementById('filter-prn').value.trim()
+      };
+      if (user.role === 'SUPER_ADMIN') {
+        params.campus_id = document.getElementById('filter-campus').value;
+      }
+
+      try {
+        const res = await api.getAdminMessages(params);
+        const messages = res.messages || [];
+        const total = res.total || messages.length;
+
+        document.getElementById('page-info').textContent = `Showing ${messages.length} of ${total} simulated messages`;
+        document.getElementById('btn-prev').disabled = page <= 1;
+        document.getElementById('btn-next').disabled = messages.length < limit || (page * limit) >= total;
+
+        if (messages.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--muted-admin);">No simulated messages match current filters.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = messages.map(m => {
+          const chan = (m.channel || 'SMS').toLowerCase();
+          const channelClass = chan === 'whatsapp' ? 'channel-whatsapp' : (chan === 'email' ? 'channel-email' : 'channel-sms');
+          return `
+            <tr>
+              <td style="white-space:nowrap;font-size:0.8125rem;color:var(--muted-admin);">${formatDateTime(m.created_at)}</td>
+              <td><span class="chip chip-${(m.campus_code || 'kon').toLowerCase()}">${escapeHtml(m.campus_name || m.campus_code)}</span></td>
+              <td>
+                <strong style="color:#FFF;">${escapeHtml(m.student_name || 'Student')}</strong>
+                <div style="font-size:0.75rem;color:var(--muted-admin);font-family:monospace;">${escapeHtml(m.prn || 'N/A')}</div>
+              </td>
+              <td><span class="channel-chip ${channelClass}">${escapeHtml(m.channel)}</span></td>
+              <td style="font-family:monospace;font-size:0.8125rem;color:#A7F3D0;">${escapeHtml(m.to_phone_masked || 'No phone saved')}</td>
+              <td><code style="font-size:0.75rem;background:#181E1A;padding:0.15rem 0.35rem;border-radius:3px;">${escapeHtml(m.template_code)}</code></td>
+              <td style="max-width:320px;word-break:break-word;">
+                <div style="font-size:0.8125rem;color:#E2E8F0;background:#1A221C;padding:0.5rem 0.65rem;border-radius:4px;border-left:3px solid var(--accent);">
+                  ${escapeHtml(m.body)}
+                </div>
+              </td>
+              <td>
+                <span class="badge-sim">SIMULATED</span>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--lost);">${escapeHtml(err.message || 'Failed to load messages')}</td></tr>`;
+      }
+    }
+
+    function debounce(fn, ms) {
+      let t;
+      return (...args) => {
+        clearTimeout(t);
+        t = setTimeout(() => fn(...args), ms);
+      };
+    }
+
+    init();
+  </script>
+</body>
+</html>
+

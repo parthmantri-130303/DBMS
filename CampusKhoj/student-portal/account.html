@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account — CampusKhoj</title>
+  <link rel="stylesheet" href="../shared/tokens.css">
+  <style>
+    .layout-container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 5rem 1rem;
+    }
+    .profile-card {
+      background: var(--surface-student);
+      border: 1px solid var(--border-student);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid #F0ECE4;
+      font-size: 0.875rem;
+    }
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--surface-student);
+      border-top: 1px solid var(--border-student);
+      display: flex;
+      justify-content: space-around;
+      padding: 0.5rem 0.25rem;
+      z-index: 1000;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+      color: var(--muted-student);
+      text-decoration: none;
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 0.25rem 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="layout-container">
+    <div style="margin-bottom:1.5rem;">
+      <a href="index.html" style="color:var(--primary-student);text-decoration:none;font-size:0.875rem;font-weight:600;">
+        &larr; Back to Dashboard
+      </a>
+      <h1 style="margin:0.5rem 0 0.25rem 0;font-size:1.75rem;color:var(--primary-student);">My Account</h1>
+      <p style="margin:0;color:var(--muted-student);font-size:0.875rem;">Your student account and registered campus details.</p>
+    </div>
+
+    <div class="profile-card animate-fade-in">
+      <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.25rem;">
+        <div style="width:54px;height:54px;border-radius:50%;background:var(--primary-student);color:#FFF;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.25rem;" id="avatar-initials">
+          ST
+        </div>
+        <div>
+          <h2 style="margin:0;font-size:1.25rem;color:var(--primary-student);" id="prof-name">Student Name</h2>
+          <span class="chip chip-kondhwa" id="prof-campus" style="margin-top:0.25rem;">Campus</span>
+        </div>
+      </div>
+
+      <div class="detail-row">
+        <span style="color:var(--muted-student);">Student PRN</span>
+        <strong id="prof-prn">...</strong>
+      </div>
+      <div class="detail-row">
+        <span style="color:var(--muted-student);">Mobile Phone</span>
+        <strong id="prof-phone">...</strong>
+      </div>
+      <div class="detail-row">
+        <span style="color:var(--muted-student);">College Email</span>
+        <strong id="prof-email">Not provided</strong>
+      </div>
+      <div class="detail-row">
+        <span style="color:var(--muted-student);">Role</span>
+        <strong>Student</strong>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:0.75rem;">
+      <a href="change-password.html" class="btn-outline" style="text-align:center;text-decoration:none;">
+        Change Password
+      </a>
+      <button id="btn-logout" class="btn-terracotta" style="width:100%;">
+        Sign Out
+      </button>
+    </div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <a href="index.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#127968;</span>
+      <span>Home</span>
+    </a>
+    <a href="campuses.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#127979;</span>
+      <span>Campuses</span>
+    </a>
+    <a href="report-lost.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#10133;</span>
+      <span>Report</span>
+    </a>
+    <a href="my-claims.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#128221;</span>
+      <span>Claims</span>
+    </a>
+    <a href="notifications.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#128276;</span>
+      <span>Alerts</span>
+    </a>
+  </nav>
+
+  <script type="module">
+    import { ApiClient } from '../shared/api.js';
+    import { showToast } from '../shared/ui.js';
+
+    const api = new ApiClient('student');
+    const user = api.getUser();
+
+    if (!api.isAuthenticated()) {
+      window.location.href = 'login.html';
+    }
+
+    async function loadAccount() {
+      try {
+        const res = await api.getMe();
+        const u = res.user;
+        document.getElementById('prof-name').textContent = u.name || 'Student';
+        document.getElementById('prof-prn').textContent = u.prn || 'N/A';
+        document.getElementById('prof-phone').textContent = u.phone || 'Not provided';
+        document.getElementById('prof-email').textContent = u.email || 'Not provided';
+
+        const initials = (u.name || 'ST').split(' ').map(p => p[0]).join('').substring(0, 2).toUpperCase();
+        document.getElementById('avatar-initials').textContent = initials;
+
+        const campusEl = document.getElementById('prof-campus');
+        if (u.campus_id === 2) {
+          campusEl.className = 'chip chip-bibwewadi';
+          campusEl.textContent = 'Bibwewadi Campus';
+        } else {
+          campusEl.className = 'chip chip-kondhwa';
+          campusEl.textContent = 'Kondhwa Campus';
+        }
+      } catch (err) {
+        showToast('Error loading profile', 'error');
+      }
+    }
+
+    document.getElementById('btn-logout').addEventListener('click', async () => {
+      await api.logout();
+      window.location.href = 'login.html';
+    });
+
+    loadAccount();
+  </script>
+</body>
+</html>
+

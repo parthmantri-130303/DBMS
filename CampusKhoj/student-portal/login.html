@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — CampusKhoj</title>
+  <link rel="stylesheet" href="../shared/tokens.css">
+  <style>
+    .login-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .login-card {
+      width: 100%;
+      max-width: 420px;
+      padding: 2.25rem;
+      background: var(--surface-student);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-student);
+      box-shadow: var(--shadow-md);
+    }
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+    .form-label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 0.375rem;
+      color: var(--text-student);
+    }
+    .form-input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0.75rem 1rem;
+      border: 1.5px solid var(--border-student);
+      border-radius: var(--radius-md);
+      font-size: 1rem;
+      background: #FFFFFF;
+      transition: border-color 150ms ease;
+    }
+    .form-input:focus {
+      border-color: var(--primary-student);
+    }
+    .helper-text {
+      font-size: 0.8125rem;
+      color: var(--muted-student);
+      margin-top: 0.375rem;
+    }
+    .brand-mark {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: var(--font-heading);
+      font-size: 1.5rem;
+      color: var(--primary-student);
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-card animate-fade-in">
+      <div style="text-align: center; margin-bottom: 1.75rem;">
+        <div class="brand-mark">
+          <span style="display:inline-block;width:12px;height:12px;background:var(--accent);border-radius:50%;"></span>
+          CampusKhoj
+        </div>
+        <p style="margin: 0; color: var(--muted-student); font-size: 0.9375rem;">
+          Two-Campus Lost & Found (Kondhwa & Bibwewadi)
+        </p>
+      </div>
+
+      <form id="login-form">
+        <div class="form-group">
+          <label for="prn" class="form-label">Student PRN</label>
+          <input
+            type="text"
+            id="prn"
+            name="prn"
+            class="form-input"
+            placeholder="10-digit PRN number"
+            inputmode="numeric"
+            pattern="[0-9]{10}"
+            required
+            autocomplete="username"
+          >
+          <div class="helper-text">Your official Permanent Registration Number</div>
+        </div>
+
+        <div class="form-group">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <label for="password" class="form-label">Password</label>
+            <button
+              type="button"
+              id="toggle-pwd"
+              style="background:none; border:none; color:var(--primary-student); font-size:0.8125rem; cursor:pointer; padding:0; min-height:auto; min-width:auto;"
+            >Show</button>
+          </div>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            class="form-input"
+            placeholder="Enter password"
+            required
+            autocomplete="current-password"
+          >
+          <div class="helper-text" style="color: #9E5616; background: #FDF4EB; padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); margin-top: 0.5rem;">
+            <strong>First time?</strong> Your PRN is your initial password — you will be prompted to change it immediately.
+          </div>
+        </div>
+
+        <button type="submit" id="submit-btn" class="btn-saffron" style="width: 100%; margin-top: 1rem;">
+          Sign In to Student Portal
+        </button>
+      </form>
+
+      <div style="text-align: center; margin-top: 1.5rem; font-size: 0.8125rem; color: var(--muted-student);">
+        Campus Security Desk Staff? <a href="../admin-portal/login.html" style="color: var(--primary-student); font-weight: 600;">Admin Portal &rarr;</a>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { ApiClient } from '../shared/api.js';
+    import { showToast } from '../shared/ui.js';
+
+    const api = new ApiClient('student');
+
+    // Toggle password visibility
+    const pwdInput = document.getElementById('password');
+    const toggleBtn = document.getElementById('toggle-pwd');
+    toggleBtn.addEventListener('click', () => {
+      if (pwdInput.type === 'password') {
+        pwdInput.type = 'text';
+        toggleBtn.textContent = 'Hide';
+      } else {
+        pwdInput.type = 'password';
+        toggleBtn.textContent = 'Show';
+      }
+    });
+
+    // Handle login submission
+    const form = document.getElementById('login-form');
+    const submitBtn = document.getElementById('submit-btn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const prn = document.getElementById('prn').value.trim();
+      const password = pwdInput.value;
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Signing in...';
+
+      try {
+        const res = await api.login(prn, password);
+        showToast('Login successful!', 'success');
+
+        if (res.must_change_password || res.scope === 'pwd_change') {
+          // Force password change screen
+          window.location.href = 'change-password.html';
+        } else if (!res.user.profile_completed) {
+          window.location.href = 'profile-setup.html';
+        } else {
+          window.location.href = 'index.html';
+        }
+      } catch (err) {
+        showToast(err.message || 'Login failed. Please check your PRN and password.', 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Sign In to Student Portal';
+      }
+    });
+  </script>
+</body>
+</html>
+

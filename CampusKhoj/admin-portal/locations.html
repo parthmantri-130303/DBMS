@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Location Management — CampusKhoj Admin</title>
+  <link rel="stylesheet" href="../shared/tokens.css">
+  <style>
+    body {
+      background-color: var(--bg-admin);
+      color: var(--text-admin);
+      display: flex;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .sidebar {
+      width: 240px;
+      background: var(--surface-admin);
+      border-right: 1px solid var(--border-admin);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .sidebar-brand {
+      padding: 1.5rem 1.25rem;
+      border-bottom: 1px solid var(--border-admin);
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .nav-links {
+      list-style: none;
+      padding: 1rem 0;
+      margin: 0;
+    }
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1.25rem;
+      color: var(--muted-admin);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.9375rem;
+      transition: all 150ms ease;
+    }
+    .nav-link:hover, .nav-link.active {
+      color: #FFFFFF;
+      background: #33403A;
+      border-left: 3px solid var(--accent);
+    }
+    .main-content {
+      flex: 1;
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+    }
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border-admin);
+      margin-bottom: 1.5rem;
+    }
+    .filters-bar {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      flex-wrap: wrap;
+      background: var(--surface-admin);
+      border: 1px solid var(--border-admin);
+      padding: 1rem 1.25rem;
+      border-radius: var(--radius-lg);
+      margin-bottom: 1.5rem;
+    }
+    .filter-control {
+      padding: 0.5rem 0.875rem;
+      background: #181E1A;
+      border: 1px solid var(--border-admin);
+      border-radius: var(--radius-sm);
+      color: #FFF;
+      font-size: 0.875rem;
+    }
+    .filter-control:focus {
+      outline: 2px solid var(--accent);
+    }
+    .table-container {
+      background: var(--surface-admin);
+      border: 1px solid var(--border-admin);
+      border-radius: var(--radius-lg);
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      text-align: left;
+    }
+    th {
+      padding: 0.875rem 1rem;
+      border-bottom: 1px solid var(--border-admin);
+      color: var(--muted-admin);
+      font-weight: 600;
+      font-size: 0.8125rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    td {
+      padding: 0.875rem 1rem;
+      border-bottom: 1px solid #232B25;
+      vertical-align: middle;
+    }
+    tbody tr:hover {
+      background: #232C25;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .status-active { background: #064E3B; color: #A7F3D0; }
+    .status-inactive { background: #374151; color: #9CA3AF; }
+
+    /* Modal styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 1rem;
+    }
+    .modal-card {
+      background: var(--surface-admin);
+      border: 1px solid var(--border-admin);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 480px;
+      padding: 1.5rem;
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
+    }
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.8125rem;
+      color: var(--muted-admin);
+      margin-bottom: 0.35rem;
+      font-weight: 500;
+    }
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      background: #181E1A;
+      border: 1px solid var(--border-admin);
+      border-radius: var(--radius-sm);
+      color: #FFF;
+      font-size: 0.875rem;
+      box-sizing: border-box;
+    }
+  </style>
+</head>
+<body class="admin-theme">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div>
+      <div class="sidebar-brand">
+        <span style="display:inline-block;width:10px;height:10px;background:var(--accent);border-radius:50%;"></span>
+        CampusKhoj Desk
+      </div>
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link">&#128202; Dashboard</a></li>
+        <li><a href="items.html" class="nav-link">&#128221; All Items &amp; CSV</a></li>
+        <li><a href="claims.html" class="nav-link">&#128270; Claims Queue</a></li>
+        <li><a href="locations.html" class="nav-link active">&#128205; Locations</a></li>
+        <li><a href="messages.html" class="nav-link">&#128172; Message Log</a></li>
+        <li><a href="users.html" class="nav-link">&#128101; PRN &amp; Students</a></li>
+        <li id="staff-nav-item" style="display:none;"><a href="staff.html" class="nav-link">&#128110; Staff Accounts</a></li>
+        <li><a href="audit.html" class="nav-link">&#128220; Audit Log</a></li>
+      </ul>
+    </div>
+    <div style="padding: 1.25rem; border-top: 1px solid var(--border-admin);">
+      <div style="font-size:0.875rem;font-weight:600;color:#FFF;" id="staff-name">Staff Admin</div>
+      <div style="font-size:0.75rem;color:var(--muted-admin);" id="staff-role">Role: SUPER_ADMIN</div>
+      <button id="btn-logout" style="margin-top:0.75rem;background:none;border:none;color:var(--lost);font-size:0.8125rem;font-weight:600;cursor:pointer;padding:0;">
+        Sign Out &rarr;
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="top-bar">
+      <div>
+        <h1 style="font-family:var(--font-heading);font-size:1.5rem;color:#FFF;margin:0 0 0.25rem 0;">Campus Locations Directory</h1>
+        <p style="color:var(--muted-admin);font-size:0.875rem;margin:0;">Manage campus buildings, spots, and rooms used in two-step student reporting dropdowns.</p>
+      </div>
+      <button id="btn-add-location" class="btn" style="background:var(--accent);color:#FFF;border:none;font-weight:600;padding:0.6rem 1.2rem;border-radius:var(--radius-sm);cursor:pointer;">
+        + Add New Location
+      </button>
+    </div>
+
+    <!-- Filters Bar -->
+    <div class="filters-bar">
+      <div id="campus-filter-group" style="display:none;">
+        <select id="filter-campus" class="filter-control">
+          <option value="">All Campuses</option>
+          <option value="1">Kondhwa Campus</option>
+          <option value="2">Bibwewadi Campus</option>
+        </select>
+      </div>
+
+      <div>
+        <select id="filter-status" class="filter-control">
+          <option value="">All Statuses</option>
+          <option value="1">Active Only</option>
+          <option value="0">Inactive / Retired</option>
+        </select>
+      </div>
+
+      <div style="flex:1;min-width:200px;">
+        <input type="text" id="filter-search" class="filter-control" placeholder="Search building, room, spot..." style="width:100%;box-sizing:border-box;">
+      </div>
+    </div>
+
+    <!-- Locations Table -->
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Campus</th>
+            <th>Building / Area</th>
+            <th>Room / Specific Spot</th>
+            <th>Floor</th>
+            <th>Sort Order</th>
+            <th>Status</th>
+            <th style="text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="locations-tbody">
+          <tr>
+            <td colspan="8" style="text-align:center;padding:2rem;color:var(--muted-admin);">Loading campus locations...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Add/Edit Location Modal -->
+  <div id="loc-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+        <h3 id="modal-title" style="margin:0;font-family:var(--font-heading);color:#FFF;">Add Campus Location</h3>
+        <button id="modal-close" style="background:none;border:none;color:var(--muted-admin);font-size:1.5rem;cursor:pointer;">&times;</button>
+      </div>
+
+      <form id="loc-form">
+        <input type="hidden" id="loc-id" value="">
+        
+        <div class="form-group" id="modal-campus-group">
+          <label for="loc-campus">Campus *</label>
+          <select id="loc-campus" required>
+            <option value="1">Kondhwa Campus</option>
+            <option value="2">Bibwewadi Campus</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="loc-building">Building / Area *</label>
+          <input type="text" id="loc-building" placeholder="e.g. Building 1, Boat Club, Fruit Canteen" required>
+        </div>
+
+        <div class="form-group">
+          <label for="loc-room">Room / Specific Spot</label>
+          <input type="text" id="loc-room" placeholder="e.g. Room 204, Counter 2, Ground Floor">
+        </div>
+
+        <div class="form-group">
+          <label for="loc-floor">Floor (Optional)</label>
+          <input type="text" id="loc-floor" placeholder="e.g. Ground Floor, 2nd Floor, -1">
+        </div>
+
+        <div class="form-group">
+          <label for="loc-order">Display Sort Order</label>
+          <input type="number" id="loc-order" value="0">
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:0.75rem;margin-top:1.5rem;">
+          <button type="button" id="modal-cancel" class="btn" style="background:#232C25;border:1px solid var(--border-admin);color:#FFF;padding:0.6rem 1rem;border-radius:var(--radius-sm);cursor:pointer;">Cancel</button>
+          <button type="submit" id="modal-submit" class="btn" style="background:var(--accent);color:#FFF;border:none;font-weight:600;padding:0.6rem 1.25rem;border-radius:var(--radius-sm);cursor:pointer;">Save Location</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    import { api } from '../shared/api.js';
+    import { showToast, escapeHtml } from '../shared/ui.js';
+
+    let user = null;
+    let allLocations = [];
+
+    async function init() {
+      try {
+        user = await api.getMe();
+        if (!['STAFF', 'SUPER_ADMIN'].includes(user.role)) {
+          window.location.href = 'login.html';
+          return;
+        }
+
+        document.getElementById('staff-name').textContent = user.full_name;
+        document.getElementById('staff-role').textContent = `Role: ${user.role} (${user.campus_code || 'ALL'})`;
+
+        if (user.role === 'SUPER_ADMIN') {
+          const staffNav = document.getElementById('staff-nav-item');
+          if (staffNav) staffNav.style.display = 'block';
+          document.getElementById('campus-filter-group').style.display = 'block';
+        } else {
+          document.getElementById('modal-campus-group').style.display = 'none';
+        }
+
+        document.getElementById('btn-logout').addEventListener('click', () => {
+          api.logout();
+          window.location.href = 'login.html';
+        });
+
+        // Event listeners
+        document.getElementById('filter-campus').addEventListener('change', renderLocations);
+        document.getElementById('filter-status').addEventListener('change', renderLocations);
+        document.getElementById('filter-search').addEventListener('input', renderLocations);
+
+        // Modal
+        const modal = document.getElementById('loc-modal');
+        document.getElementById('btn-add-location').addEventListener('click', () => openModal());
+        document.getElementById('modal-close').addEventListener('click', () => modal.style.display = 'none');
+        document.getElementById('modal-cancel').addEventListener('click', () => modal.style.display = 'none');
+
+        document.getElementById('loc-form').addEventListener('submit', handleFormSubmit);
+
+        loadLocations();
+      } catch (err) {
+        window.location.href = 'login.html';
+      }
+    }
+
+    async function loadLocations() {
+      try {
+        const res = await api.getAdminLocations({ include_inactive: 1 });
+        allLocations = res.locations || [];
+        renderLocations();
+      } catch (err) {
+        showToast(err.message || 'Failed to load locations', 'error');
+      }
+    }
+
+    function renderLocations() {
+      const tbody = document.getElementById('locations-tbody');
+      const campusFilter = document.getElementById('filter-campus').value;
+      const statusFilter = document.getElementById('filter-status').value;
+      const searchQuery = document.getElementById('filter-search').value.toLowerCase().trim();
+
+      const filtered = allLocations.filter(loc => {
+        if (campusFilter && loc.campus_id !== parseInt(campusFilter, 10)) return false;
+        if (statusFilter !== '') {
+          const wantActive = statusFilter === '1';
+          if (Boolean(loc.is_active) !== wantActive) return false;
+        }
+        if (searchQuery) {
+          const haystack = `${loc.building || ''} ${loc.room_or_spot || ''} ${loc.location_name || ''} ${loc.campus_name || ''}`.toLowerCase();
+          if (!haystack.includes(searchQuery)) return false;
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--muted-admin);">No locations match filter.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(loc => {
+        const isActive = Boolean(loc.is_active);
+        return `
+          <tr>
+            <td style="font-family:monospace;color:var(--muted-admin);">${loc.location_id}</td>
+            <td><span class="chip chip-${(loc.campus_code || 'kon').toLowerCase()}">${escapeHtml(loc.campus_name || loc.campus_code)}</span></td>
+            <td><strong style="color:#FFF;">${escapeHtml(loc.building || loc.location_name)}</strong></td>
+            <td style="color:#E2E8F0;">${escapeHtml(loc.room_or_spot || '—')}</td>
+            <td style="color:var(--muted-admin);">${escapeHtml(loc.floor || '—')}</td>
+            <td style="color:var(--muted-admin);">${loc.sort_order ?? 0}</td>
+            <td>
+              <span class="status-badge ${isActive ? 'status-active' : 'status-inactive'}">
+                ${isActive ? 'Active' : 'Inactive'}
+              </span>
+            </td>
+            <td style="text-align:right;white-space:nowrap;">
+              <button class="btn-edit" data-id="${loc.location_id}" style="background:#181E1A;border:1px solid var(--border-admin);color:#FFF;padding:0.3rem 0.6rem;border-radius:4px;cursor:pointer;font-size:0.75rem;margin-right:0.35rem;">
+                Edit
+              </button>
+              <button class="btn-toggle" data-id="${loc.location_id}" data-active="${isActive ? '1' : '0'}" style="background:#181E1A;border:1px solid var(--border-admin);color:${isActive ? '#F87171' : '#34D399'};padding:0.3rem 0.6rem;border-radius:4px;cursor:pointer;font-size:0.75rem;margin-right:0.35rem;">
+                ${isActive ? 'Deactivate' : 'Activate'}
+              </button>
+              <button class="btn-delete" data-id="${loc.location_id}" style="background:#3B1E1E;border:1px solid #7F1D1D;color:#FCA5A5;padding:0.3rem 0.6rem;border-radius:4px;cursor:pointer;font-size:0.75rem;">
+                Delete
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // Attach actions
+      tbody.querySelectorAll('.btn-edit').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = parseInt(btn.dataset.id, 10);
+          const loc = allLocations.find(l => l.location_id === id);
+          if (loc) openModal(loc);
+        });
+      });
+
+      tbody.querySelectorAll('.btn-toggle').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = parseInt(btn.dataset.id, 10);
+          const currentlyActive = btn.dataset.active === '1';
+          try {
+            await api.updateAdminLocation(id, { is_active: !currentlyActive });
+            showToast(`Location ${!currentlyActive ? 'activated' : 'deactivated'} successfully.`, 'success');
+            await loadLocations();
+          } catch (err) {
+            showToast(err.message || 'Failed to update location status', 'error');
+          }
+        });
+      });
+
+      tbody.querySelectorAll('.btn-delete').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = parseInt(btn.dataset.id, 10);
+          if (!confirm('Are you sure you want to permanently delete this location? Note: in-use locations cannot be deleted.')) return;
+          try {
+            await api.deleteAdminLocation(id);
+            showToast('Location deleted successfully.', 'success');
+            await loadLocations();
+          } catch (err) {
+            showToast(err.message || 'Cannot delete location in use (HTTP 409). Consider deactivating instead.', 'error');
+          }
+        });
+      });
+    }
+
+    function openModal(loc = null) {
+      const modal = document.getElementById('loc-modal');
+      const title = document.getElementById('modal-title');
+      const form = document.getElementById('loc-form');
+      
+      form.reset();
+      if (loc) {
+        title.textContent = 'Edit Location';
+        document.getElementById('loc-id').value = loc.location_id;
+        document.getElementById('loc-campus').value = loc.campus_id;
+        document.getElementById('loc-building').value = loc.building || loc.location_name;
+        document.getElementById('loc-room').value = loc.room_or_spot || '';
+        document.getElementById('loc-floor').value = loc.floor || '';
+        document.getElementById('loc-order').value = loc.sort_order ?? 0;
+      } else {
+        title.textContent = 'Add Campus Location';
+        document.getElementById('loc-id').value = '';
+        if (user.role !== 'SUPER_ADMIN') {
+          document.getElementById('loc-campus').value = user.campus_id;
+        }
+      }
+      modal.style.display = 'flex';
+    }
+
+    async function handleFormSubmit(e) {
+      e.preventDefault();
+      const locId = document.getElementById('loc-id').value;
+      const campusId = parseInt(document.getElementById('loc-campus').value, 10);
+      const building = document.getElementById('loc-building').value.trim();
+      const roomOrSpot = document.getElementById('loc-room').value.trim();
+      const floor = document.getElementById('loc-floor').value.trim();
+      const sortOrder = parseInt(document.getElementById('loc-order').value, 10) || 0;
+
+      const submitBtn = document.getElementById('modal-submit');
+      submitBtn.disabled = true;
+
+      try {
+        if (locId) {
+          // Update
+          await api.updateAdminLocation(parseInt(locId, 10), {
+            building,
+            room_or_spot: roomOrSpot,
+            floor,
+            sort_order: sortOrder
+          });
+          showToast('Location updated successfully.', 'success');
+        } else {
+          // Create
+          await api.addAdminLocation({
+            campus_id: user.role === 'SUPER_ADMIN' ? campusId : user.campus_id,
+            building,
+            room_or_spot: roomOrSpot,
+            floor,
+            sort_order: sortOrder
+          });
+          showToast('Location created successfully.', 'success');
+        }
+        document.getElementById('loc-modal').style.display = 'none';
+        await loadLocations();
+      } catch (err) {
+        showToast(err.message || 'Failed to save location', 'error');
+      } finally {
+        submitBtn.disabled = false;
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
+

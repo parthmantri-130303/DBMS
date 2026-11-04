@@ -1,0 +1,23 @@
+{
+  "concurrency": 100,
+  "duration_seconds": 30.54,
+  "total_requests": 4890,
+  "throughput_rps": 160.1,
+  "status_distribution": {
+    "404": 20,
+    "200": 151,
+    "429": 4710,
+    "500": 9
+  },
+  "success_rate_pct": 3.09,
+  "error_rate_pct": 96.91,
+  "latencies_ms": {
+    "min": 2.55,
+    "avg": 316.68,
+    "p50": 191.53,
+    "p90": 526.82,
+    "p95": 668.31,
+    "p99": 5118.34,
+    "max": 5454.04
+  }
+}

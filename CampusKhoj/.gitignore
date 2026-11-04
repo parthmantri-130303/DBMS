@@ -1,0 +1,36 @@
+# Node & frontend tools
+node_modules/
+package-lock.json
+
+# Environment variables & secrets
+backend/.env
+.env
+*.env
+
+# Python bytecode & environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# Student records & real PII lists
+student_data/
+*.xlsx
+*.csv
+
+# Uploaded media (keep folder structure if needed)
+backend/media/lost/*
+!backend/media/lost/.gitkeep
+backend/media/found/*
+!backend/media/found/.gitkeep
+
+# Operating system & editor metadata
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+

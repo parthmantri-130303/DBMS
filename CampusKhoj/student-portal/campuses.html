@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Campuses — CampusKhoj</title>
+  <link rel="stylesheet" href="../shared/tokens.css">
+  <style>
+    .layout-container {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 5rem 1rem;
+    }
+    .segmented-control {
+      display: flex;
+      background: var(--surface-student);
+      border: 1px solid var(--border-student);
+      border-radius: var(--radius-md);
+      padding: 0.25rem;
+      position: relative;
+      margin-bottom: 1.5rem;
+    }
+    .segment-btn {
+      flex: 1;
+      padding: 0.625rem 1rem;
+      border: none;
+      background: none;
+      font-weight: 600;
+      font-size: 0.9375rem;
+      color: var(--muted-student);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      transition: color 200ms ease, background-color 200ms ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      min-height: 44px;
+    }
+    .segment-btn.active {
+      color: var(--primary-student);
+      background: #FFFFFF;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+      align-items: center;
+    }
+    .search-input {
+      flex: 1;
+      min-width: 220px;
+      padding: 0.625rem 1rem;
+      border: 1.5px solid var(--border-student);
+      border-radius: var(--radius-md);
+      font-size: 0.9375rem;
+    }
+    .filter-select {
+      padding: 0.625rem 1rem;
+      border: 1.5px solid var(--border-student);
+      border-radius: var(--radius-md);
+      font-size: 0.9375rem;
+      background: #FFFFFF;
+    }
+    .tab-pills {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border-student);
+      padding-bottom: 0.5rem;
+    }
+    .tab-pill {
+      background: none;
+      border: none;
+      padding: 0.5rem 1rem;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--muted-student);
+      cursor: pointer;
+      position: relative;
+    }
+    .tab-pill.active {
+      color: var(--primary-student);
+    }
+    .tab-pill.active::after {
+      content: '';
+      position: absolute;
+      bottom: -0.5rem;
+      left: 0;
+      right: 0;
+      height: 2.5px;
+      background: var(--primary-student);
+      border-radius: 2px;
+    }
+    .items-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.25rem;
+    }
+    .item-card {
+      background: var(--surface-student);
+      border: 1px solid var(--border-student);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      text-decoration: none;
+      color: inherit;
+      box-shadow: var(--shadow-sm);
+      transition: transform 200ms ease, box-shadow 200ms ease;
+    }
+    .item-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+    .card-body {
+      padding: 1.25rem;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 3.5rem 1.5rem;
+      background: var(--surface-student);
+      border: 1px dashed var(--border-student);
+      border-radius: var(--radius-lg);
+      margin-top: 1rem;
+    }
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--surface-student);
+      border-top: 1px solid var(--border-student);
+      display: flex;
+      justify-content: space-around;
+      padding: 0.5rem 0.25rem;
+      z-index: 1000;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+      color: var(--muted-student);
+      text-decoration: none;
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 0.25rem 0.5rem;
+    }
+    .nav-item.active {
+      color: var(--primary-student);
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div class="layout-container">
+    <div style="margin-bottom: 1.5rem;">
+      <h1 style="margin:0 0 0.25rem 0;font-size:1.75rem;color:var(--primary-student);">Browse Items by Campus</h1>
+      <p style="margin:0;color:var(--muted-student);font-size:0.875rem;">
+        Select a campus section to explore reported lost items or recently found items.
+      </p>
+    </div>
+
+    <!-- Segmented Campus Selector -->
+    <div class="segmented-control" id="campus-segmented">
+      <button class="segment-btn active" data-campus="1" id="seg-kon">
+        <span>Kondhwa Campus</span>
+        <span class="chip chip-kondhwa" id="badge-kon" style="display:none;font-size:0.7rem;">Your campus</span>
+      </button>
+      <button class="segment-btn" data-campus="2" id="seg-bib">
+        <span>Bibwewadi Campus</span>
+        <span class="chip chip-bibwewadi" id="badge-bib" style="display:none;font-size:0.7rem;">Your campus</span>
+      </button>
+    </div>
+
+    <!-- Filters & Search -->
+    <div class="filter-bar">
+      <input type="text" id="search-q" class="search-input" placeholder="Search item name, brand, description..." aria-label="Search item name, brand, or description">
+      <select id="filter-cat" class="filter-select" aria-label="Filter by category">
+        <option value="">All Categories</option>
+      </select>
+      <select id="filter-loc" class="filter-select" aria-label="Filter by location">
+        <option value="">All Locations</option>
+      </select>
+      <button id="btn-filter" class="btn-forest" style="padding:0.625rem 1.25rem;">Filter</button>
+    </div>
+
+    <!-- Sub-Tabs: Lost vs Found -->
+    <div class="tab-pills">
+      <button class="tab-pill active" id="tab-found" data-tab="found">Found Items</button>
+      <button class="tab-pill" id="tab-lost" data-tab="lost">Lost Reports</button>
+    </div>
+
+    <!-- Results Grid -->
+    <div id="results-container">
+      <div id="items-grid" class="items-grid"></div>
+    </div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <a href="index.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#127968;</span>
+      <span>Home</span>
+    </a>
+    <a href="campuses.html" class="nav-item active">
+      <span style="font-size:1.25rem;">&#127979;</span>
+      <span>Campuses</span>
+    </a>
+    <a href="report-lost.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#10133;</span>
+      <span>Report</span>
+    </a>
+    <a href="my-claims.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#128221;</span>
+      <span>Claims</span>
+    </a>
+    <a href="notifications.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#128276;</span>
+      <span>Alerts</span>
+    </a>
+  </nav>
+
+  <script type="module">
+    import { ApiClient } from '../shared/api.js';
+    import { escapeHtml, formatDate, renderSkeletons } from '../shared/ui.js';
+
+    const api = new ApiClient('student');
+    const user = api.getUser();
+
+    if (!api.enforceStudentFlow()) {
+      throw new Error("Navigation redirected by auth state");
+    }
+
+    let activeCampus = user?.campus_id || 1;
+    let activeTab = 'found'; // 'found' or 'lost'
+
+    // Set badges
+    if (user?.campus_id === 1) {
+      document.getElementById('badge-kon').style.display = 'inline-block';
+    } else if (user?.campus_id === 2) {
+      document.getElementById('badge-bib').style.display = 'inline-block';
+    }
+
+    // Segment buttons
+    const segKon = document.getElementById('seg-kon');
+    const segBib = document.getElementById('seg-bib');
+
+    function updateSegmentUI() {
+      if (activeCampus === 1) {
+        segKon.classList.add('active');
+        segBib.classList.remove('active');
+      } else {
+        segBib.classList.add('active');
+        segKon.classList.remove('active');
+      }
+    }
+
+    segKon.addEventListener('click', () => {
+      activeCampus = 1;
+      updateSegmentUI();
+      loadLocations();
+      loadItems();
+    });
+
+    segBib.addEventListener('click', () => {
+      activeCampus = 2;
+      updateSegmentUI();
+      loadLocations();
+      loadItems();
+    });
+
+    // Sub tabs
+    const tabFound = document.getElementById('tab-found');
+    const tabLost = document.getElementById('tab-lost');
+
+    tabFound.addEventListener('click', () => {
+      activeTab = 'found';
+      tabFound.classList.add('active');
+      tabLost.classList.remove('active');
+      loadItems();
+    });
+
+    tabLost.addEventListener('click', () => {
+      activeTab = 'lost';
+      tabLost.classList.add('active');
+      tabFound.classList.remove('active');
+      loadItems();
+    });
+
+    // Populate categories
+    async function loadCategories() {
+      try {
+        const res = await api.getCategories();
+        const sel = document.getElementById('filter-cat');
+        res.categories.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.category_id;
+          opt.textContent = c.category_name;
+          sel.appendChild(opt);
+        });
+      } catch {}
+    }
+
+    // Populate locations for active campus
+    async function loadLocations() {
+      try {
+        const res = await api.getCampusLocations(activeCampus);
+        const sel = document.getElementById('filter-loc');
+        sel.innerHTML = '<option value="">All Locations</option>';
+        res.locations.forEach(loc => {
+          const opt = document.createElement('option');
+          opt.value = loc.location_id;
+          opt.textContent = `${loc.building} — ${loc.location_name}`;
+          sel.appendChild(opt);
+        });
+      } catch {}
+    }
+
+    // Search and filter button
+    document.getElementById('btn-filter').addEventListener('click', loadItems);
+    document.getElementById('search-q').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') loadItems();
+    });
+
+    async function loadItems() {
+      const container = document.getElementById('items-grid');
+      renderSkeletons(container, 3);
+
+      const q = document.getElementById('search-q').value.trim();
+      const category_id = document.getElementById('filter-cat').value;
+      const location_id = document.getElementById('filter-loc').value;
+
+      const params = { page: 1, page_size: 20 };
+      if (q) params.q = q;
+      if (category_id) params.category_id = category_id;
+      if (location_id) params.location_id = location_id;
+
+      try {
+        const res = activeTab === 'found'
+          ? await api.getCampusFound(activeCampus, params)
+          : await api.getCampusLost(activeCampus, params);
+
+        const items = res.items || [];
+        if (items.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state" style="grid-column: 1 / -1;">
+              <span style="font-size:3rem;">&#128203;</span>
+              <h3 style="margin:0.75rem 0 0.25rem 0;color:var(--primary-student);">Nothing here yet</h3>
+              <p style="margin:0 0 1.25rem 0;color:var(--muted-student);font-size:0.875rem;">
+                No ${activeTab} items match your filter criteria in this campus.
+              </p>
+              ${activeCampus === user?.campus_id ? `
+                <a href="${activeTab === 'found' ? 'report-found.html' : 'report-lost.html'}" class="btn-saffron">
+                  Report a ${activeTab === 'found' ? 'Found' : 'Lost'} Item
+                </a>
+              ` : ''}
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = items.map((item, idx) => {
+          const isFound = activeTab === 'found';
+          const id = isFound ? item.found_id : item.lost_id;
+          const dateStr = isFound ? item.date_found : item.date_lost;
+          const chipClass = isFound ? 'chip-found' : 'chip-lost';
+
+          return `
+            <a href="item-detail.html?type=${activeTab}&id=${id}" class="item-card animate-fade-in stagger-${(idx % 4) + 1}">
+              ${item.image_url ? `
+                <div style="height:160px;overflow:hidden;background:#EEE;border-bottom:1px solid var(--border-student);">
+                  <img src="${item.image_url}" alt="${escapeHtml(item.item_name)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">
+                </div>
+              ` : ''}
+              <div class="card-body">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+                  <span class="chip ${chipClass}">${isFound ? 'Found' : 'Lost'}</span>
+                  <span style="font-size:0.75rem;color:var(--muted-student);">${formatDate(dateStr)}</span>
+                </div>
+                <h3 style="margin:0 0 0.375rem 0;font-size:1.125rem;color:var(--primary-student);">${escapeHtml(item.item_name)}</h3>
+                <p style="margin:0 0 0.75rem 0;font-size:0.8125rem;color:var(--muted-student);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+                  ${escapeHtml(item.description)}
+                </p>
+                <div style="font-size:0.8125rem;color:var(--muted-student);">
+                  &#128205; <strong>${escapeHtml(item.location_name)}</strong> (${escapeHtml(item.building || '')})
+                </div>
+              </div>
+              <div style="padding:0.75rem 1.25rem;background:var(--surface-alt-student);border-top:1px solid var(--border-student);display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:0.75rem;color:var(--muted-student);">${escapeHtml(item.category_name)}</span>
+                <span style="font-size:0.8125rem;font-weight:600;color:var(--primary-student);">View Details &rarr;</span>
+              </div>
+            </a>
+          `;
+        }).join('');
+
+      } catch (err) {
+        container.innerHTML = `<div style="grid-column:1/-1;color:var(--danger);padding:1rem;">Failed to load items: ${err.message}</div>`;
+      }
+    }
+
+    updateSegmentUI();
+    loadCategories();
+    loadLocations();
+    loadItems();
+  </script>
+</body>
+</html>
+

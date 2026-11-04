@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: campuskhoj-mysql
+    command: --default-authentication-plugin=mysql_native_password
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: campuskhoj
+      MYSQL_USER: campususer
+      MYSQL_PASSWORD: campuspassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
+      - ./database/views.sql:/docker-entrypoint-initdb.d/03_views.sql:ro
+      - ./database/triggers.sql:/docker-entrypoint-initdb.d/04_triggers.sql:ro
+      - ./database/procedures.sql:/docker-entrypoint-initdb.d/05_procedures.sql:ro
+      - mysql_data:/var/lib/mysql
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: campuskhoj-backend
+    restart: unless-stopped
+    depends_on:
+      - mysql
+    environment:
+      FLASK_ENV: development
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: rootpassword
+      DB_NAME: campuskhoj
+      JWT_SECRET: supersecretcampuskhojjwtkey32byteslong!
+      MEDIA_ROOT: /app/media
+      CORS_ORIGINS: http://localhost:3001,http://localhost:3002,http://127.0.0.1:3001,http://127.0.0.1:3002
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend/media:/app/media
+
+volumes:
+  mysql_data:
+

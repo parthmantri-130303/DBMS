@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Report Lost Item — CampusKhoj</title>
+  <link rel="stylesheet" href="../shared/tokens.css">
+  <style>
+    .layout-container {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 5rem 1rem;
+    }
+    .form-card {
+      background: var(--surface-student);
+      border: 1px solid var(--border-student);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+    .form-label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 0.375rem;
+    }
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0.75rem 1rem;
+      border: 1.5px solid var(--border-student);
+      border-radius: var(--radius-md);
+      font-size: 0.9375rem;
+      background: #FFFFFF;
+      font-family: inherit;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: var(--lost);
+    }
+    .image-dropzone {
+      border: 2px dashed #D6C2BB;
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+      text-align: center;
+      background: #FDF9F7;
+      cursor: pointer;
+    }
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--surface-student);
+      border-top: 1px solid var(--border-student);
+      display: flex;
+      justify-content: space-around;
+      padding: 0.5rem 0.25rem;
+      z-index: 1000;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+      color: var(--muted-student);
+      text-decoration: none;
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 0.25rem 0.5rem;
+    }
+    .nav-item.active {
+      color: var(--primary-student);
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div class="layout-container">
+    <div style="margin-bottom:1.25rem;">
+      <a href="index.html" style="color:var(--primary-student);text-decoration:none;font-size:0.875rem;font-weight:600;">
+        &larr; Back to Dashboard
+      </a>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.5rem;">
+        <h1 style="margin:0;font-size:1.75rem;color:var(--lost);">Report a Lost Item</h1>
+        <span class="chip chip-kondhwa" id="campus-badge">Campus</span>
+      </div>
+      <p style="margin:0.25rem 0 0 0;color:var(--muted-student);font-size:0.875rem;">
+        Provide details so students and campus security desks can match and identify it.
+      </p>
+    </div>
+
+    <!-- Live Recent Items Slideshow -->
+    <div id="recent-slideshow-container"></div>
+
+    <div class="form-card animate-fade-in">
+      <form id="lost-form">
+        <div class="form-group">
+          <label for="item-name" class="form-label">Item Name *</label>
+          <input
+            type="text"
+            id="item-name"
+            class="form-input"
+            placeholder="e.g. Casio fx-991CW Calculator"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="category-id" class="form-label">Category *</label>
+          <select id="category-id" class="form-select" required>
+            <option value="">Select Category</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom:1.25rem;">
+          <label class="form-label" style="font-weight:700;">Location Where Lost *</label>
+          <div style="font-size:0.8125rem;color:var(--muted-student);margin-bottom:0.5rem;">
+            Two-step campus location picker. Type to search or select Building &amp; Spot below.
+          </div>
+
+          <!-- Type-to-Search Box -->
+          <div style="position:relative;margin-bottom:0.75rem;">
+            <input type="text" id="loc-search" class="form-input" placeholder="🔍 Type to filter building or spot (e.g. Canteen, Building 2, Lab)..." autocomplete="off" style="padding-left:2.2rem;min-height:44px;">
+            <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted-student);">📍</span>
+          </div>
+
+          <!-- Two-step grid -->
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:0.75rem;">
+            <div>
+              <label for="step1-building" class="form-label" style="font-size:0.8125rem;">Step 1: Building / Main Area *</label>
+              <select id="step1-building" class="form-select" required style="min-height:48px;">
+                <option value="">Select Building / Area</option>
+              </select>
+            </div>
+            <div>
+              <label for="step2-spot" class="form-label" style="font-size:0.8125rem;">Step 2: Room, Lab or Specific Spot *</label>
+              <select id="step2-spot" class="form-select" required disabled style="min-height:48px;">
+                <option value="">Choose Building first</option>
+              </select>
+            </div>
+          </div>
+          <input type="hidden" id="location-id" required>
+        </div>
+
+        <!-- Dynamic Building Subfields: Floor & Room No for Building 1-4 -->
+        <div id="building-subfields" style="display:none;background:#F8FAFC;border:1.5px solid #CBD5E1;border-radius:var(--radius-md);padding:1rem;margin-bottom:1.25rem;">
+          <div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:0.75rem;color:var(--primary-student);font-weight:700;font-size:0.875rem;">
+            <span>🏢</span> Building Floor &amp; Room Details
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:1rem;">
+            <div class="form-group" style="margin-bottom:0;">
+              <label for="floor-select" class="form-label">Floor *</label>
+              <select id="floor-select" class="form-select" style="min-height:44px;">
+                <option value="">Select Floor</option>
+                <option value="Ground Floor (0)">Ground Floor (0)</option>
+                <option value="1st Floor">1st Floor</option>
+                <option value="2nd Floor">2nd Floor</option>
+                <option value="3rd Floor">3rd Floor</option>
+                <option value="4th Floor">4th Floor</option>
+                <option value="5th Floor">5th Floor</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label for="room-no" class="form-label">Classroom / Lab / Room No.</label>
+              <input type="text" id="room-no" class="form-input" placeholder="e.g. Room 204, CS Lab 2" style="min-height:44px;">
+            </div>
+          </div>
+          <div class="form-group" style="margin-top:0.75rem;margin-bottom:0;">
+            <label for="building-spot" class="form-label">Specific Spot / Landmark</label>
+            <input type="text" id="building-spot" class="form-input" placeholder="e.g. 2nd bench near window, podium" style="min-height:44px;">
+          </div>
+        </div>
+
+        <!-- Dynamic Other Location Description Box -->
+        <div id="other-location-field" style="display:none;background:#FFF9F2;border:1.5px solid #F3D9A4;border-radius:var(--radius-md);padding:1rem;margin-bottom:1.25rem;">
+          <div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:0.5rem;color:#8B5A10;font-weight:700;font-size:0.875rem;">
+            <span>📍</span> Describe Custom Campus Location *
+          </div>
+          <p style="margin:0 0 0.5rem 0;font-size:0.75rem;color:#78521B;">
+            Specify exactly where on campus you lost this item (e.g. Outside gate 2, garden near fountain, walkway).
+          </p>
+          <textarea id="custom-location-desc" class="form-textarea" rows="2" placeholder="e.g. Outside Fruit Canteen sitting stairs near tree..."></textarea>
+        </div>
+
+        <!-- Standard Spot field (for canteens, parking, boat club, etc.) -->
+        <div id="standard-spot-field" class="form-group">
+          <label for="specific-spot" class="form-label">Specific Spot / Table / Counter (Optional)</label>
+          <input type="text" id="specific-spot" class="form-input" placeholder="e.g. Table 4, near order counter, bike stand A" style="min-height:44px;">
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div class="form-group">
+            <label for="date-lost" class="form-label">Date Lost *</label>
+            <input type="date" id="date-lost" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label for="color" class="form-label">Primary Color</label>
+            <input type="text" id="color" class="form-input" placeholder="e.g. Black, Navy Blue">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="description" class="form-label">Description &amp; Context *</label>
+          <textarea
+            id="description"
+            class="form-textarea"
+            rows="3"
+            placeholder="Where you last had it, unique scratches, identifying marks..."
+            required
+          ></textarea>
+        </div>
+
+        <!-- Optional Accordion: More Details -->
+        <details style="margin-bottom:1.5rem;border:1px solid var(--border-student);border-radius:var(--radius-md);padding:0.75rem 1rem;">
+          <summary style="font-size:0.875rem;font-weight:600;color:var(--primary-student);cursor:pointer;">
+            + Add Brand &amp; Photo (Optional)
+          </summary>
+          <div style="margin-top:1rem;">
+            <div class="form-group">
+              <label for="brand" class="form-label">Brand / Manufacturer</label>
+              <input type="text" id="brand" class="form-input" placeholder="e.g. Casio, Fastrack, HP">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Item Photo (Gallery or Camera)</label>
+              <div id="media-capture-container"></div>
+              <input type="file" id="image-file" accept="image/jpeg,image/png,image/webp" style="display:none;">
+            </div>
+          </div>
+        </details>
+
+        <button type="submit" id="submit-btn" class="btn-terracotta" style="width:100%;">
+          Submit Lost Report
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <a href="index.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#127968;</span>
+      <span>Home</span>
+    </a>
+    <a href="campuses.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#127979;</span>
+      <span>Campuses</span>
+    </a>
+    <a href="report-lost.html" class="nav-item active">
+      <span style="font-size:1.25rem;">&#10133;</span>
+      <span>Report</span>
+    </a>
+    <a href="my-claims.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#128221;</span>
+      <span>Claims</span>
+    </a>
+    <a href="notifications.html" class="nav-item">
+      <span style="font-size:1.25rem;">&#128276;</span>
+      <span>Alerts</span>
+    </a>
+  </nav>
+
+  <script type="module">
+    import { ApiClient } from '../shared/api.js';
+    import { showToast, renderRecentItemsSlideshow, setupMediaCapture } from '../shared/ui.js';
+
+    const api = new ApiClient('student');
+    const user = api.getUser();
+
+    if (!api.isAuthenticated()) {
+      window.location.href = 'login.html';
+    }
+
+    const campusId = user?.campus_id || 1;
+    const campusBadge = document.getElementById('campus-badge');
+    if (campusId === 2) {
+      campusBadge.className = 'chip chip-bibwewadi';
+      campusBadge.textContent = 'Bibwewadi Campus';
+    } else {
+      campusBadge.className = 'chip chip-kondhwa';
+      campusBadge.textContent = 'Kondhwa Campus';
+    }
+
+    // Initialize Recent Items Slideshow
+    renderRecentItemsSlideshow(document.getElementById('recent-slideshow-container'), api, { campus_id: campusId });
+
+    // Set today as default and max date
+    const today = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById('date-lost');
+    dateInput.value = today;
+    dateInput.max = today;
+
+    // Initialize Dual Media Capture (Gallery + Live Camera)
+    const fileInput = document.getElementById('image-file');
+    setupMediaCapture({
+      container: document.getElementById('media-capture-container'),
+      input: fileInput
+    });
+
+    // Dual-Step Location Picker Elements
+    let allCampusLocations = [];
+    const step1Building = document.getElementById('step1-building');
+    const step2Spot = document.getElementById('step2-spot');
+    const locHidden = document.getElementById('location-id');
+    const locSearch = document.getElementById('loc-search');
+    const buildingSubfields = document.getElementById('building-subfields');
+    const otherLocationField = document.getElementById('other-location-field');
+    const standardSpotField = document.getElementById('standard-spot-field');
+
+    function populateTwoStepPicker(locations) {
+      allCampusLocations = locations;
+      const buildingsMap = new Map();
+      locations.forEach(loc => {
+        const b = loc.building || loc.location_name;
+        if (!buildingsMap.has(b)) buildingsMap.set(b, []);
+        buildingsMap.get(b).push(loc);
+      });
+
+      // Always ensure "Other / Not sure" is represented
+      let hasOther = Array.from(buildingsMap.keys()).some(k => k.toLowerCase().includes('other'));
+      if (!hasOther && locations.length > 0) {
+        buildingsMap.set('Other / Not sure', [{
+          location_id: locations[0].location_id,
+          location_name: 'Other Campus Location',
+          building: 'Other / Not sure',
+          room_or_spot: 'Custom Spot / Landmark'
+        }]);
+      }
+
+      step1Building.innerHTML = '<option value="">Select Building / Area</option>';
+      for (const b of buildingsMap.keys()) {
+        const opt = document.createElement('option');
+        opt.value = b;
+        opt.textContent = b;
+        step1Building.appendChild(opt);
+      }
+    }
+
+    step1Building.addEventListener('change', () => {
+      const chosenBuilding = step1Building.value;
+      step2Spot.innerHTML = '';
+
+      if (!chosenBuilding) {
+        step2Spot.disabled = true;
+        step2Spot.innerHTML = '<option value="">Choose Building first</option>';
+        locHidden.value = '';
+        buildingSubfields.style.display = 'none';
+        otherLocationField.style.display = 'none';
+        standardSpotField.style.display = 'none';
+        return;
+      }
+
+      const spots = allCampusLocations.filter(loc => (loc.building || loc.location_name) === chosenBuilding);
+      step2Spot.disabled = false;
+      step2Spot.innerHTML = '<option value="">Select Room / Specific Spot</option>';
+
+      spots.forEach(loc => {
+        const opt = document.createElement('option');
+        opt.value = loc.location_id;
+        opt.textContent = loc.room_or_spot || loc.location_name;
+        opt.dataset.locName = loc.location_name;
+        step2Spot.appendChild(opt);
+      });
+
+      // If only 1 spot or default other, select it
+      if (spots.length === 1) {
+        step2Spot.selectedIndex = 1;
+        locHidden.value = spots[0].location_id;
+      } else {
+        locHidden.value = '';
+      }
+
+      const lowerB = chosenBuilding.toLowerCase();
+      const isBuilding14 = /building\s*[1-4]/i.test(lowerB) || lowerB.includes('main building');
+      const isOther = lowerB.includes('other');
+
+      if (isBuilding14) {
+        buildingSubfields.style.display = 'block';
+        otherLocationField.style.display = 'none';
+        standardSpotField.style.display = 'none';
+      } else if (isOther) {
+        buildingSubfields.style.display = 'none';
+        otherLocationField.style.display = 'block';
+        standardSpotField.style.display = 'none';
+        if (spots.length > 0) locHidden.value = spots[0].location_id;
+      } else {
+        buildingSubfields.style.display = 'none';
+        otherLocationField.style.display = 'none';
+        standardSpotField.style.display = 'block';
+      }
+    });
+
+    step2Spot.addEventListener('change', () => {
+      locHidden.value = step2Spot.value;
+    });
+
+    // Real-time type-to-search input filtering across building & spots
+    locSearch.addEventListener('input', () => {
+      const query = locSearch.value.trim().toLowerCase();
+      if (!query) {
+        Array.from(step1Building.options).forEach(opt => opt.style.display = '');
+        return;
+      }
+
+      let matchBuilding = null;
+      Array.from(step1Building.options).forEach(opt => {
+        if (!opt.value) return;
+        const bName = opt.value.toLowerCase();
+        const hasSpotMatch = allCampusLocations.some(l => 
+          (l.building || l.location_name).toLowerCase() === bName &&
+          ((l.room_or_spot || '').toLowerCase().includes(query) || (l.location_name || '').toLowerCase().includes(query))
+        );
+        if (bName.includes(query) || hasSpotMatch) {
+          opt.style.display = '';
+          if (!matchBuilding) matchBuilding = opt.value;
+        } else {
+          opt.style.display = 'none';
+        }
+      });
+
+      if (matchBuilding && step1Building.value !== matchBuilding) {
+        step1Building.value = matchBuilding;
+        step1Building.dispatchEvent(new Event('change'));
+      }
+    });
+
+    // Load categories & locations
+    async function loadFormDropdowns() {
+      try {
+        const catRes = await api.getCategories();
+        const catSel = document.getElementById('category-id');
+        catRes.categories.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.category_id;
+          opt.textContent = c.category_name;
+          catSel.appendChild(opt);
+        });
+
+        const locRes = await api.getCampusLocations(campusId);
+        populateTwoStepPicker(locRes.locations || []);
+      } catch (err) {
+        showToast('Error loading form options', 'error');
+      }
+    }
+    loadFormDropdowns();
+
+    // Form submit
+    document.getElementById('lost-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = document.getElementById('submit-btn');
+
+      if (!locHidden.value) {
+        showToast('Please select a specific campus location spot', 'error');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Filing report...';
+
+      const formData = new FormData();
+      formData.append('item_name', document.getElementById('item-name').value.trim());
+      formData.append('category_id', document.getElementById('category-id').value);
+      formData.append('location_id', locHidden.value);
+      formData.append('date_lost', document.getElementById('date-lost').value);
+      formData.append('description', document.getElementById('description').value.trim());
+
+      const color = document.getElementById('color').value.trim();
+      if (color) formData.append('color', color);
+
+      // Handle building subfields vs other vs standard
+      const chosenBuilding = (step1Building.value || '').toLowerCase();
+      const isBuilding = /building\s*[1-4]/i.test(chosenBuilding) || chosenBuilding.includes('main building');
+      const isOther = chosenBuilding.includes('other');
+
+      if (isBuilding) {
+        const floor = document.getElementById('floor-select').value;
+        const room = document.getElementById('room-no')?.value.trim();
+        const spot = document.getElementById('building-spot')?.value.trim();
+
+        let roomParts = [];
+        if (floor) roomParts.push(floor);
+        if (room) roomParts.push(room);
+        if (roomParts.length) formData.append('room_no', roomParts.join(', '));
+        if (spot) formData.append('specific_spot', spot);
+      } else if (isOther) {
+        const customDesc = document.getElementById('custom-location-desc')?.value.trim();
+        if (customDesc) formData.append('specific_spot', `Other: ${customDesc}`);
+      } else {
+        const specificSpot = document.getElementById('specific-spot')?.value.trim();
+        if (specificSpot) formData.append('specific_spot', specificSpot);
+      }
+
+      const brand = document.getElementById('brand').value.trim();
+      if (brand) formData.append('brand', brand);
+
+      const file = fileInput.files[0];
+      if (file) formData.append('image', file);
+
+      try {
+        const res = await api.reportLost(formData);
+        showToast('Lost report filed successfully! Running matcher...', 'success');
+        setTimeout(() => {
+          window.location.href = `item-detail.html?type=lost&id=${res.lost_id}`;
+        }, 600);
+      } catch (err) {
+        showToast(err.message || 'Failed to file lost report', 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Lost Report';
+      }
+    });
+  </script>
+</body>
+</html>
+
